@@ -63,27 +63,33 @@ def home():
 
 # 1. REGISTRAR USUARIOS DEL SISTEMA (Para control de accesos y roles)
 @app.post("/api/v1/usuarios/registrar", status_code=status.HTTP_201_CREATED)
-def registrar_usuario(usuario: UsuarioCreate):
+def registrar_usuario(usuario: UsuarioCreate):  # Conservamos tu modelo original 🟢
     conn = get_db_connection()
     if not conn:
         raise HTTPException(status_code=500, detail="Error de conexión a la base de datos")
     
     try:
         with conn.cursor() as cur:
+            # 1. Insertar en la tabla general de credenciales (users)
             cur.execute(
                 "INSERT INTO users (username, password, role) VALUES (%s, %s, %s) RETURNING idUser",
                 (usuario.username, usuario.password, usuario.role)
             )
             id_usuario = cur.fetchone()["iduser"]
             
-            # Si el rol es Cliente, creamos automáticamente su perfil vacío en la tabla Cliente
-            if usuario.role == "Cliente":
+            # 2. Normalizar el texto del rol para evitar fallos por minúsculas o espacios extra 🛡️
+            rol_normalizado = usuario.role.strip().capitalize()
+            
+            # 3. Crear automáticamente el expediente relacional si es Cliente
+            if rol_normalizado == "Cliente":
                 cur.execute(
                     "INSERT INTO Cliente (NombreEmpresa, idUser) VALUES (%s, %s)",
                     (f"Empresa de {usuario.username}", id_usuario)
                 )
+                
         conn.commit()
         return {"mensaje": f"Usuario '{usuario.username}' con rol '{usuario.role}' creado exitosamente."}
+        
     except Exception as e:
         conn.rollback()
         raise HTTPException(status_code=400, detail=f"El usuario ya existe o los datos son inválidos: {e}")
