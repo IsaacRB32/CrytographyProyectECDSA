@@ -1,5 +1,5 @@
 /* frontend_pwa/app.js */
-const API_URL = "http://127.0.0.1:8000/api/v1";
+const API_URL = "https://crytographyproyectecdsa.onrender.com";
 
 // VARIABLES DE ESTADO LOCAL (Seguridad en memoria RAM)
 let usuarioSesion = null;      // Datos del cliente logeado
