@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Intranet Corporativa</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 20px; background-color: #f5f7fb; color: #333; }
+        .container { max-width: 1000px; margin: auto; }
+        .card { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); margin-top: 20px;}
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        h1, h2, h3 { color: #1e3a8a; margin-top: 0; }
+        label { display: block; margin: 10px 0 5px; font-weight: 600; font-size: 14px; }
+        input, select, textarea { width: 100%; padding: 10px; border: 1px solid #cbd5e0; border-radius: 6px; box-sizing: border-box; }
+        button { width: 100%; background: #3182ce; color: white; padding: 12px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; margin-top: 15px; }
+        button:hover { background: #2b6cb0; }
+        .btn-logout { background: #e53e3e; margin-top: 20px; width: auto; padding: 10px 20px; }
+        .btn-logout:hover { background: #c53030; }
+        .status-box { margin-top: 15px; padding: 12px; border-radius: 6px; font-family: monospace; font-size: 13px; background: #edf2f7; border-left: 4px solid #4a5568; }
+        .hidden { display: none; }
+        
+        /* Estilos para la tabla de Auditoría */
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 14px; }
+        th, td { text-align: left; padding: 12px; border-bottom: 1px solid #e2e8f0; }
+        th { background-color: #f7fafc; color: #4a5568; }
+        tr:hover { background-color: #fbfdff; }
+        .badge-rojo { background: #fed7d7; color: #c53030; padding: 4px 8px; border-radius: 12px; font-weight: bold; font-size: 12px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>🏢 Sistema Interno Corporativo</h1>
+
+    <div id="vistaLogin" class="card" style="max-width: 400px; margin: auto;">
+        <h2>Acceso al Sistema</h2>
+        <form id="formLogin">
+            <label>Usuario:</label>
+            <input type="text" id="loginUser" required>
+            <label>Contraseña:</label>
+            <input type="password" id="loginPass" required>
+            <button type="submit">Iniciar Sesión</button>
+        </form>
+        <div id="statusLogin" style="color: red; margin-top: 10px; font-size: 14px;"></div>
+    </div>
+
+    <div id="vistaVentas" class="hidden">
+        <div class="card" style="background: #e6fffa; border: 1px solid #319795; margin-bottom: 20px;">
+            <h2 style="color: #2c7a7b; margin: 0;">Panel Operativo de Ventas 🤝</h2>
+            <p style="margin: 5px 0 0 0;">Agente Activo: <b id="nombreVendedor"></b></p>
+            <button class="btn-logout" onclick="cerrarSesion()">Salir de la cuenta</button>
+        </div>
+
+        <div class="grid">
+            <div class="card" style="margin-top: 0;">
+                <h3>👤 Alta de Nuevos Clientes</h3>
+                <p style="font-size: 13px; color: #718096;">Registra al cliente para que pueda usar la PWA.</p>
+                <form id="formUsuario">
+                    <label>Nombre del Cliente / Empresa:</label>
+                    <input type="text" id="userUsername" required>
+                    <label>Contraseña Temporal:</label>
+                    <input type="password" id="userPassword" value="123" required>
+                    <input type="hidden" id="userRole" value="Cliente">
+                    <button type="submit">Crear Cuenta de Cliente</button>
+                </form>
+                <div class="status-box" id="statusUsuario">Estado: Esperando captura...</div>
+            </div>
+
+            <div class="card" style="margin-top: 0;">
+                <h3>📄 Emitir Nueva Cotización</h3>
+                <form id="formCotizacion">
+                    <label>ID del Cliente Destino:</label>
+                    <input type="number" id="cotIdCliente" required>
+                    <label>Monto de la Transacción ($):</label>
+                    <input type="number" id="cotMonto" step="0.01" required>
+                    <label>Detalles del Servicio:</label>
+                    <textarea id="cotDetalles" rows="3" required></textarea>
+                    <button type="submit" style="background: #319795;">Enviar a Pre-Firma</button>
+                </form>
+                <div class="status-box" id="statusCotizacion">Estado: Esperando captura...</div>
+            </div>
+        </div>
+    </div>
+
+    <div id="vistaFinanzas" class="card hidden">
+        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #e2e8f0; padding-bottom: 10px; margin-bottom: 20px;">
+            <div>
+                <h2>Panel de Auditoría Financiera 🛡️</h2>
+                <p style="margin: 0; color: #718096;">Auditor Activo: <b id="nombreAuditor"></b></p>
+            </div>
+            <button class="btn-logout" onclick="cerrarSesion()">Salir</button>
+        </div>
+        
+        <div style="background: #fff5f5; border-left: 4px solid #f56565; padding: 15px; border-radius: 4px; margin-bottom: 20px;">
+            <h4 style="margin-top: 0; color: #9b2c2c;">Módulo Criptográfico de Alertas (ECDSA)</h4>
+            <p style="font-size: 14px; margin-bottom: 0;">Aquí se mostrarán automáticamente los intentos de alteración de montos o modificaciones no autorizadas por la firma del cliente.</p>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <h3>Registro de Integridad Transaccional</h3>
+            <button onclick="cargarAuditoria()" style="width: auto; margin: 0; padding: 8px 15px; background: #4a5568;">↻ Actualizar</button>
+        </div>
+
+        <table id="tablaAuditoria">
+            <thead>
+                <tr>
+                    <th>Fecha</th>
+                    <th>ID Cotización</th>
+                    <th>Alerta Detectada</th>
+                    <th>Detalles Criptográficos</th>
+                </tr>
+            </thead>
+            <tbody>
+                </tbody>
+        </table>
+    </div>
+
+</div>
+
+<script>
+    const API_URL = "http://127.0.0.1:8000/api/v1";
+    let usuarioActual = null;
+
+    // --- LOGIN ---
+    document.getElementById('formLogin').onsubmit = async (e) => {
+        e.preventDefault();
+        const errorDiv = document.getElementById('statusLogin');
+        errorDiv.innerText = "Verificando...";
+
+        try {
+            const res = await fetch(`${API_URL}/usuarios/login`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    username: document.getElementById('loginUser').value,
+                    password: document.getElementById('loginPass').value
+                })
+            });
+            
+            if (res.ok) {
+                usuarioActual = await res.json();
+                errorDiv.innerText = "";
+                mostrarVistaCorrespondiente();
+            } else {
+                const data = await res.json();
+                errorDiv.innerText = `❌ ${data.detail}`;
+            }
+        } catch (err) { errorDiv.innerText = `❌ Error de red`; }
+    };
+
+    function mostrarVistaCorrespondiente() {
+        document.getElementById('vistaLogin').classList.add('hidden');
+        
+        if (usuarioActual.role === "Ventas") {
+            document.getElementById('nombreVendedor').innerText = usuarioActual.username;
+            document.getElementById('vistaVentas').classList.remove('hidden');
+        } else if (usuarioActual.role === "Finanzas") {
+            document.getElementById('nombreAuditor').innerText = usuarioActual.username;
+            document.getElementById('vistaFinanzas').classList.remove('hidden');
+            cargarAuditoria(); // Carga la tabla automáticamente al entrar
+        }
+    }
+
+    function cerrarSesion() {
+        usuarioActual = null;
+        document.getElementById('vistaVentas').classList.add('hidden');
+        document.getElementById('vistaFinanzas').classList.add('hidden');
+        document.getElementById('vistaLogin').classList.remove('hidden');
+        document.getElementById('formLogin').reset();
+    }
+
+    // --- LÓGICA DE VENTAS ---
+    // 1. Alta de Cliente
+    document.getElementById('formUsuario').onsubmit = async (e) => {
+        e.preventDefault();
+        const statusDiv = document.getElementById('statusUsuario');
+        try {
+            const res = await fetch(`${API_URL}/usuarios/registrar`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    username: document.getElementById('userUsername').value,
+                    password: document.getElementById('userPassword').value,
+                    role: document.getElementById('userRole').value
+                })
+            });
+            const data = await res.json();
+            statusDiv.innerText = res.ok ? `🟢 ${data.mensaje}` : `🔴 ${data.detail}`;
+        } catch (err) { statusDiv.innerText = `❌ Error de red`; }
+    };
+
+    // 2. Crear Cotización
+    document.getElementById('formCotizacion').onsubmit = async (e) => {
+        e.preventDefault();
+        const statusDiv = document.getElementById('statusCotizacion');
+        try {
+            const res = await fetch(`${API_URL}/cotizaciones/crear`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    id_cliente: parseInt(document.getElementById('cotIdCliente').value),
+                    id_vendedor: usuarioActual.id_user,
+                    monto: parseFloat(document.getElementById('cotMonto').value),
+                    detalles: document.getElementById('cotDetalles').value
+                })
+            });
+            const data = await res.json();
+            statusDiv.innerText = res.ok ? `🟢 ID: ${data.id_cotizacion}. Esperando firma del cliente.` : `🔴 ${data.detail}`;
+        } catch (err) { statusDiv.innerText = `❌ Error de red`; }
+    };
+
+    // --- LÓGICA DE FINANZAS ---
+    // Cargar tabla de Auditoría
+    async function cargarAuditoria() {
+        const tbody = document.querySelector('#tablaAuditoria tbody');
+        tbody.innerHTML = "<tr><td colspan='4'>Cargando registros criptográficos...</td></tr>";
+        
+        try {
+            const res = await fetch(`${API_URL}/auditoria`);
+            const json = await res.json();
+            
+            if(json.data.length === 0) {
+                tbody.innerHTML = "<tr><td colspan='4' style='text-align:center; color:#718096;'>No se han detectado alteraciones o fraudes.</td></tr>";
+                return;
+            }
+
+            tbody.innerHTML = "";
+            json.data.forEach(reg => {
+                const fecha = new Date(reg.fecha_evento).toLocaleString('es-MX');
+                tbody.innerHTML += `
+                    <tr>
+                        <td>${fecha}</td>
+                        <td>#${reg.idcotizacion}</td>
+                        <td><span class="badge-rojo">${reg.accion}</span></td>
+                        <td style="font-family: monospace; font-size: 11px;">${reg.datos_anteriores}</td>
+                    </tr>
+                `;
+            });
+        } catch (err) {
+            tbody.innerHTML = "<tr><td colspan='4'>❌ Error al conectar con el monolito.</td></tr>";
+        }
+    }
+</script>
+</body>
+</html>

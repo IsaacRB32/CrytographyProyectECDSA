@@ -1,0 +1,136 @@
+/* frontend_pwa/style.css */
+body {
+    font-family: 'Segoe UI', -apple-system, Arial, sans-serif;
+    padding: 15px;
+    max-width: 450px;
+    margin: auto;
+    background-color: #121212;
+    color: #ffffff;
+}
+
+header {
+    text-align: center;
+    margin-bottom: 25px;
+}
+
+header h2 { margin: 0; color: #2196F3; }
+header p { margin: 5px 0 0 0; color: #888; font-size: 13px; }
+
+.card {
+    background: #1e1e1e;
+    padding: 20px;
+    border-radius: 14px;
+    margin-bottom: 15px;
+    border: 1px solid #2d2d2d;
+}
+
+label {
+    display: block;
+    margin: 12px 0 5px;
+    font-weight: 600;
+    font-size: 13px;
+    color: #b3b3b3;
+}
+
+input {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #3d3d3d;
+    background: #262626;
+    color: white;
+    border-radius: 8px;
+    box-sizing: border-box;
+    margin-bottom: 5px;
+    font-size: 15px;
+}
+
+.btn {
+    display: block;
+    width: 100%;
+    padding: 12px;
+    border-radius: 8px;
+    border: none;
+    font-weight: bold;
+    cursor: pointer;
+    font-size: 15px;
+    margin-top: 15px;
+    text-align: center;
+}
+
+.btn-blue { background-color: #2196F3; color: white; }
+.btn-blue:hover { background-color: #1976D2; }
+.btn-green { background-color: #4CAF50; color: white; }
+.btn-red { background-color: #f44336; color: white; }
+.btn-logout { background-color: #333; color: #fc8181; font-size: 13px; padding: 8px; margin-top: 25px; }
+
+.btn-back {
+    background: none;
+    border: none;
+    color: #2196F3;
+    font-weight: bold;
+    cursor: pointer;
+    padding: 0;
+    font-size: 14px;
+}
+
+.error-msg { color: #f44336; margin-top: 10px; font-size: 13px; text-align: center; }
+
+.alert-banner { padding: 15px; border-radius: 8px; font-size: 13px; margin-bottom: 15px; }
+.alert-banner.warning { background: #3a2a00; border-left: 4px solid #ff9800; color: #ffe0b2; }
+.alert-banner h4 { margin: 0 0 5px 0; color: #ff9800; }
+
+.info-text { font-size: 13px; color: #aaa; line-height: 1.4; }
+
+.status-box {
+    margin-top: 15px;
+    padding: 10px;
+    border-radius: 6px;
+    font-family: monospace;
+    font-size: 11px;
+    background: #000000;
+    color: #00ff00;
+    overflow-x: auto;
+    white-space: pre-wrap;
+}
+
+.user-banner {
+    display: flex;
+    justify-content: space-between;
+    background: #1a2238;
+    padding: 10px 15px;
+    border-radius: 8px;
+    font-size: 13px;
+    color: #90cdf4;
+    border: 1px solid #2b3954;
+    margin-bottom: 20px;
+}
+.user-banner p { margin: 0; }
+
+/* Lista de cotizaciones */
+.inbox-list { margin: 15px 0; }
+.inbox-item {
+    background: #1e1e1e;
+    padding: 15px;
+    border-radius: 10px;
+    margin-bottom: 10px;
+    border: 1px solid #2d2d2d;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.inbox-item:hover { background: #262626; border-color: #444; }
+.inbox-item h4 { margin: 0; color: #fff; }
+.inbox-item p { margin: 3px 0 0 0; font-size: 12px; color: #aaa; }
+.badge-pendiente { background: #3a2f1d; color: #ffb020; padding: 3px 8px; border-radius: 10px; font-size: 11px; font-weight: bold; }
+
+/* Detalles */
+.details-box { background: #151515; padding: 15px; border-radius: 8px; border: 1px solid #222; margin-bottom: 15px; }
+.monto-destacado { color: #4CAF50; font-size: 20px; font-weight: bold; display: block; margin: 5px 0; }
+.text-detalles { font-size: 14px; color: #ddd; background: #222; padding: 10px; border-radius: 6px; }
+.hash-label { font-size: 11px; color: #666; margin-bottom: 2px; font-weight: bold; }
+#detHash { font-size: 10px; color: #888; word-break: break-all; }
+
+.action-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+.hidden { display: none !important; }
