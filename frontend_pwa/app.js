@@ -55,20 +55,35 @@ document.getElementById('formLoginPWA').onsubmit = async (e) => {
 };
 
 // --- FLUJO 2: INSPECCIÓN CRYPTO Y BANDEJA ---
+// --- FLUJO 2: INSPECCIÓN CRYPTO Y BANDEJA ---
 async function verificarEstadoYConsultarBandeja() {
     try {
         const response = await fetch(`${API_URL}/clientes/${usuarioSesion.id_cliente}/cotizaciones`);
         const data = await response.json();
-
         cotizacionesEnBandeja = data.cotizaciones_pendientes;
 
-        // VERIFICACIÓN DE IDENTIDAD CRIPTOGRÁFICA (Tu propuesta de bloqueo)
+        // 1. Intentamos cargar la llave privada desde el disco duro del celular (localStorage)
+        llavePrivadaLocal = await cargarLlavePrivadaDelCelular();
+
+        // 2. Evaluamos el estado real del usuario
         if (data.tiene_llave_registrada === false) {
-            // Caso A: Cuenta nueva sin llave pública en Render -> BLOQUEO DE PANTALLA
+            // Caso A: Cliente totalmente nuevo. Necesita generar llaves obligatoriamente.
             cambiarVista('view-setup-keys');
             document.getElementById('logSetup').innerText = "Llavero vacío. Se requiere aprovisionamiento inicial.";
-        } else {
-            // Caso B: Cuenta válida con llave pública registrada -> Entra al Inbox
+        } 
+        else if (data.tiene_llave_registrada === true && llavePrivadaLocal === null) {
+            // Caso B: El backend dice que ya tiene llave, pero ESTE celular en particular NO la tiene guardada.
+            // (Ocurre si el cliente entra desde un celular nuevo, usó modo incógnito o borró el historial).
+            cambiarVista('view-setup-keys');
+            document.getElementById('logSetup').style.color = "#ff9800";
+            document.getElementById('logSetup').innerText = "⚠️ Dispositivo no reconocido. Se requiere generar un nuevo llavero para este equipo (Re-enrolamiento).";
+        } 
+        else {
+            // Caso C: El backend lo reconoce y el celular tiene la llave privada intacta en localStorage.
+            // Nos aseguramos doblemente de que la RAM tenga la llave levantada antes de abrir el inbox.
+            if (!llavePrivadaLocal) {
+                llavePrivadaLocal = await cargarLlavePrivadaDelCelular();
+            }
             cargarVistaBandejaInbox();
         }
     } catch (err) {
@@ -107,11 +122,13 @@ function cargarVistaBandejaInbox() {
 document.getElementById('btnRegistrarLlaves').onclick = async () => {
     const logDiv = document.getElementById('logSetup');
     logDiv.innerText = "Calculando curvas elípticas en hardware local...";
+    
 
     try {
         // Llamamos a las primitivas criptográficas de tu archivo crypto_pwa.js
         const parDeLlaves = await generarParDeLlaves();
         llavePrivadaLocal = parDeLlaves.privateKey; // Se almacena de forma segura en la RAM del navegador
+        await guardarLlavePrivadaEnCelular(llavePrivadaLocal);
         
         logDiv.innerText += "\n> Exportando llave pública (Formato SPKI Base64)...";
         const pubKeyB64 = await exportarLlavePublicaB64(parDeLlaves.publicKey);
@@ -219,6 +236,28 @@ document.getElementById('btnFirmarAceptar').onclick = async () => {
         logDiv.innerText += `\n❌ Fallo en red: ${err.message}`;
     }
 };
+// 1. Guardar llave en la memoria del navegador
+async function guardarLlavePrivadaEnCelular(privateKey) {
+    // Exportamos a formato JWK (JSON Web Key)
+    const jwk = await window.crypto.subtle.exportKey("jwk", privateKey);
+    localStorage.setItem("mi_llave_privada_ecdsa", JSON.stringify(jwk));
+}
+
+// 2. Recuperar llave cuando el cliente vuelve un mes después
+async function cargarLlavePrivadaDelCelular() {
+    const jwkStr = localStorage.getItem("mi_llave_privada_ecdsa");
+    if (!jwkStr) return null; // No hay llave guardada
+    
+    const jwk = JSON.parse(jwkStr);
+    // Reconstruimos el objeto CryptoKey matemático
+    return await window.crypto.subtle.importKey(
+        "jwk",
+        jwk,
+        { name: "ECDSA", namedCurve: "P-256" },
+        true,
+        ["sign"]
+    );
+}
 
 function cerrarSesion() {
     usuarioSesion = null;
