@@ -22,20 +22,17 @@ async function exportarLlavePublicaB64(publicKey) {
 
 // 3. Firma un contrato usando la llave privada local
 async function firmarHashDocumento(privateKey, hashHex) {
-    // Convierte el texto hexadecimal del contrato a formato de bytes
     const hashBuffer = new Uint8Array(hashHex.match(/[\da-f]{2}/gi).map(h => parseInt(h, 16)));
     
-    // Ejecuta la firma geométrica ECDSA
     const firmaBuffer = await window.crypto.subtle.sign(
-        {
-            name: "ECDSA",
-            hash: { name: "SHA-256" },
-        },
+        { name: "ECDSA", hash: { name: "SHA-256" } },
         privateKey,
         hashBuffer
     );
     
+    // Convertir a Base64 de forma segura
     const firmaArray = new Uint8Array(firmaBuffer);
-    const firmaString = String.fromCharCode.apply(null, firmaArray);
-    return btoa(firmaString);
+    let binary = "";
+    firmaArray.forEach(b => binary += String.fromCharCode(b));
+    return btoa(binary);
 }
