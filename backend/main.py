@@ -4,7 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from typing import Optional
 import os
-
+import hashlib
 # Importaciones modulares de tu propia arquitectura
 from database import get_db_connection
 from crypto_backend import verificar_firma_ecdsa
