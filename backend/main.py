@@ -336,16 +336,23 @@ def obtener_resumen_tablas():
 
 @app.delete("/api/v1/admin/cotizaciones/{id_cotizacion}")
 def eliminar_cotizacion_individual(id_cotizacion: int):
-    """Elimina una cotización específica usando su ID."""
+    """Elimina una cotización específica y su historial de auditoría asociado."""
     conn = get_db_connection()
     try:
         with conn.cursor() as cur:
+            # 1. Primero borramos los registros hijos (El historial de auditoría)
+            # Esto evita el error de violación de llave foránea (foreign key constraint)
+            cur.execute("DELETE FROM Registro_Auditoria WHERE idCotizacion = %s", (id_cotizacion,))
+            
+            # 2. Ahora sí podemos borrar al padre (La cotización)
             cur.execute("DELETE FROM Cotizacion WHERE idCotizacion = %s RETURNING idCotizacion", (id_cotizacion,))
             result = cur.fetchone()
+            
             if not result:
                 raise HTTPException(status_code=404, detail="La cotización seleccionada no existe")
+                
         conn.commit()
-        return {"status": "success", "mensaje": f"Cotización #{id_cotizacion} eliminada del sistema."}
+        return {"status": "success", "mensaje": f"Cotización #{id_cotizacion} y su historial eliminados del sistema."}
     except Exception as e:
         conn.rollback()
         raise HTTPException(status_code=400, detail=str(e))
