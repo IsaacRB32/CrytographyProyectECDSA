@@ -36,6 +36,8 @@ document.getElementById('formLoginPWA').onsubmit = async (e) => {
         }
 
         const data = await response.json();
+        localStorage.setItem("clienteSesion", JSON.stringify(data.usuario));
+        usuarioSesion = data.usuario;
         
         // REGLA DE ARQUITECTURA: La PWA solo permite el acceso a Clientes
         if (data.role !== "Cliente") {
@@ -260,8 +262,19 @@ async function cargarLlavePrivadaDelCelular() {
         ["sign"]
     );
 }
+// Al cargar la PWA, recuperamos la sesión si existe
+window.onload = () => {
+    const sesionGuardada = localStorage.getItem("clienteSesion");
+    if (sesionGuardada) {
+        usuarioSesion = JSON.parse(sesionGuardada);
+        // Automáticamente cargamos su bandeja de entrada
+        verificarEstadoYConsultarBandeja();
+    }
+};
+
 
 function cerrarSesion() {
+    localStorage.removeItem("clienteSesion");
     usuarioSesion = null;
     llavePrivadaLocal = null;
     cotizacionesEnBandeja = [];

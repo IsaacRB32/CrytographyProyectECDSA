@@ -166,6 +166,7 @@
             
             if (res.ok) {
                 usuarioActual = await res.json();
+                localStorage.setItem("usuarioSesion", JSON.stringify(usuarioActual));
                 errorDiv.innerText = "";
                 mostrarVistaCorrespondiente();
             } else {
@@ -195,6 +196,7 @@
 
     function cerrarSesion() {
         usuarioActual = null;
+        localStorage.removeItem("usuarioSesion");
         document.getElementById('vistaVentas').classList.add('hidden');
         document.getElementById('vistaFinanzas').classList.add('hidden');
         document.getElementById('vistaLogin').classList.remove('hidden');
@@ -347,6 +349,14 @@
             alert("❌ Error crítico ejecutando el comando en Render.");
         }
     }
+    // Al cargar la página, verificamos si hay una sesión guardada
+    window.onload = () => {
+        const sesionGuardada = localStorage.getItem("usuarioSesion");
+        if (sesionGuardada) {
+            usuarioActual = JSON.parse(sesionGuardada);
+            mostrarVistaCorrespondiente();
+        }
+    };
 </script>
 </body>
 </html>
