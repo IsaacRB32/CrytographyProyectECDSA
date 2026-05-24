@@ -54,7 +54,7 @@ document.getElementById('formLoginPWA').onsubmit = async (e) => {
     }
 };
 
-// --- FLUJO 2: INSPECCIÓN CRYPTO Y BANDEJA ---
+
 // --- FLUJO 2: INSPECCIÓN CRYPTO Y BANDEJA ---
 async function verificarEstadoYConsultarBandeja() {
     try {
@@ -211,6 +211,7 @@ document.getElementById('btnFirmarAceptar').onclick = async () => {
         logDiv.innerText += "\n> Firma geométrica calculada con éxito.";
         logDiv.innerText += "\n> Transmitiendo paquete de validación matemática al monolito...";
 
+        console.log("Firmando este hash:", hashContrato);
         const response = await fetch(`${API_URL}/cotizaciones/${cotizacionSeleccionada.idcotizacion}/firmar`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },

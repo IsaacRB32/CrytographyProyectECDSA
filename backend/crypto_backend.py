@@ -23,6 +23,9 @@ def verificar_firma_ecdsa(llave_publica_b64: str, hash_documento: str, firma_dig
             hash_bytes, # Pasamos los bytes puros, no el texto codificado
             ec.ECDSA(hashes.SHA256())
         )
+        # Dentro de verificar_firma_ecdsa
+        print(f"DEBUG: Llave pública recibida: {llave_publica_b64[:20]}...")
+        print(f"DEBUG: Hash a verificar (bytes): {binascii.hexlify(hash_bytes)}")
         return True
     except Exception as e:
         print(f"⚠️ Fallo matemático en verificación ECDSA: {e}")
