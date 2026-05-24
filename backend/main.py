@@ -142,14 +142,13 @@ def crear_cotizacion(cotizacion: CotizacionCreate):
         conn.close()
 
 # 4. VERIFICAR Y FIRMAR COTIZACIÓN (El Endpoint Crítico de tu proyecto)
-@app.post("/api/v1/cotizaciones/{id_cotizacion}/firmar")
 def firmar_cotizacion(id_cotizacion: int, payload: FirmaRequest):
     conn = get_db_connection()
     try:
         with conn.cursor() as cur:
-            # Recuperar de forma estricta la llave pública del cliente vinculada a esta cotización específica
+            # 1. Traemos los datos actuales (que podrían estar alterados)
             cur.execute("""
-                SELECT c.llave_publica, cot.monto
+                SELECT c.llave_publica, cot.monto, cot.detalles 
                 FROM Cliente c 
                 JOIN Cotizacion cot ON c.idCliente = cot.idCliente 
                 WHERE cot.idCotizacion = %s
@@ -158,10 +157,26 @@ def firmar_cotizacion(id_cotizacion: int, payload: FirmaRequest):
 
             if not result:
                 raise HTTPException(status_code=404, detail="Cotización no encontrada")
-            if not result['llave_publica']:
-                raise HTTPException(status_code=400, detail="El cliente no ha registrado una identidad criptográfica (Llave Pública)")
 
-            # Ejecutamos la validación matemática llamando a tu módulo crypto_backend
+            # 2. RECALCULAMOS EL HASH CON LA REALIDAD DE LA BASE DE DATOS
+            cadena_actual = f"{result['monto']}|{result['detalles']}"
+            hash_actual_db = hashlib.sha256(cadena_actual.encode('utf-8')).hexdigest()
+
+            # 3. EL PERRO GUARDIÁN: Si el hash de la DB no es el que el cliente firmó, hubo fraude.
+            if hash_actual_db != payload.hash_original:
+                cur.execute(
+                    """INSERT INTO Registro_Auditoria (idCotizacion, accion, datos_anteriores) 
+                       VALUES (%s, 'INTENTO_ALTERACION_MONTO', %s)""",
+                    (id_cotizacion, f"El cliente firmó un contrato por un monto distinto al que existe actualmente en BD. Posible fraude de Ventas.")
+                )
+                cur.execute("UPDATE Cotizacion SET estado = 'Alterada' WHERE idCotizacion = %s", (id_cotizacion,))
+                conn.commit()
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN, 
+                    detail="⚠️ CRÍTICO: Los datos en el servidor fueron alterados y no coinciden con lo que el cliente autorizó."
+                )
+
+            # 4. Si todo está en orden, verificamos la firma matemática (Código original)
             es_valida = verificar_firma_ecdsa(
                 llave_publica_b64=result['llave_publica'],
                 hash_documento=payload.hash_original,
