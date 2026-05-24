@@ -181,11 +181,15 @@
         if (usuarioActual.role === "Ventas") {
             document.getElementById('nombreVendedor').innerText = usuarioActual.username;
             document.getElementById('vistaVentas').classList.remove('hidden');
-            cargarDatosConsolaAdmin(); // <--- AGREGAR ESTA LÍNEA
+            cargarDatosConsolaAdmin(); 
         } else if (usuarioActual.role === "Finanzas") {
             document.getElementById('nombreAuditor').innerText = usuarioActual.username;
             document.getElementById('vistaFinanzas').classList.remove('hidden');
             cargarAuditoria();
+        } else {
+            // EL PARCHE DE SEGURIDAD: Expulsar a los clientes de la intranet
+            alert("🔒 Acceso denegado: Las cuentas de Cliente deben iniciar sesión desde la aplicación móvil (PWA).");
+            cerrarSesion();
         }
     }
 
