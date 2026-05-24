@@ -142,6 +142,7 @@ def crear_cotizacion(cotizacion: CotizacionCreate):
         conn.close()
 
 # 4. VERIFICAR Y FIRMAR COTIZACIÓN (El Endpoint Crítico de tu proyecto)
+@app.post("/api/v1/cotizaciones/{id_cotizacion}/firmar")
 def firmar_cotizacion(id_cotizacion: int, payload: FirmaRequest):
     conn = get_db_connection()
     try:
