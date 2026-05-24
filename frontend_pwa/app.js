@@ -14,7 +14,6 @@ function cambiarVista(idVistaObjetivo) {
 }
 
 // --- FLUJO 1: LOGEAR USUARIO ---
-// --- FLUJO 1: LOGEAR USUARIO ---
 document.getElementById('formLoginPWA').onsubmit = async (e) => {
     e.preventDefault();
     const errorDiv = document.getElementById('statusLogin');
@@ -44,7 +43,7 @@ document.getElementById('formLoginPWA').onsubmit = async (e) => {
             return;
         }
 
-        // CORRECCIÓN: Guardamos 'data' directamente porque el JSON viene plano desde el monolito
+        // Guardamos los datos completos de sesión directamente
         localStorage.setItem("clienteSesion", JSON.stringify(data));
         usuarioSesion = data;
         errorDiv.innerText = "";
@@ -54,16 +53,6 @@ document.getElementById('formLoginPWA').onsubmit = async (e) => {
 
     } catch (err) {
         errorDiv.innerText = "❌ Error: El monolito central está fuera de línea.";
-    }
-};
-
-// --- RESTAURACIÓN AUTOMÁTICA AL REFRESCAR ---
-window.onload = () => {
-    const sesionGuardada = localStorage.getItem("clienteSesion");
-    // Validamos que exista y que no se haya guardado un string "undefined" por error
-    if (sesionGuardada && sesionGuardada !== "undefined") {
-        usuarioSesion = JSON.parse(sesionGuardada);
-        verificarEstadoYConsultarBandeja();
     }
 };
 
@@ -85,14 +74,12 @@ async function verificarEstadoYConsultarBandeja() {
         } 
         else if (data.tiene_llave_registrada === true && llavePrivadaLocal === null) {
             // Caso B: El backend dice que ya tiene llave, pero ESTE celular en particular NO la tiene guardada.
-            // (Ocurre si el cliente entra desde un celular nuevo, usó modo incógnito o borró el historial).
             cambiarVista('view-setup-keys');
             document.getElementById('logSetup').style.color = "#ff9800";
             document.getElementById('logSetup').innerText = "⚠️ Dispositivo no reconocido. Se requiere generar un nuevo llavero para este equipo (Re-enrolamiento).";
         } 
         else {
             // Caso C: El backend lo reconoce y el celular tiene la llave privada intacta en localStorage.
-            // Nos aseguramos doblemente de que la RAM tenga la llave levantada antes de abrir el inbox.
             if (!llavePrivadaLocal) {
                 llavePrivadaLocal = await cargarLlavePrivadaDelCelular();
             }
@@ -134,12 +121,10 @@ function cargarVistaBandejaInbox() {
 document.getElementById('btnRegistrarLlaves').onclick = async () => {
     const logDiv = document.getElementById('logSetup');
     logDiv.innerText = "Calculando curvas elípticas en hardware local...";
-    
 
     try {
-        // Llamamos a las primitivas criptográficas de tu archivo crypto_pwa.js
         const parDeLlaves = await generarParDeLlaves();
-        llavePrivadaLocal = parDeLlaves.privateKey; // Se almacena de forma segura en la RAM del navegador
+        llavePrivadaLocal = parDeLlaves.privateKey; 
         await guardarLlavePrivadaEnCelular(llavePrivadaLocal);
         
         logDiv.innerText += "\n> Exportando llave pública (Formato SPKI Base64)...";
@@ -175,12 +160,9 @@ function verDetalleCotizacion(cot) {
     document.getElementById('detId').innerText = cot.idcotizacion;
     document.getElementById('detMonto').innerText = cot.monto;
     document.getElementById('detEspecificaciones').innerText = cot.detalles;
-    
-    // --- NUEVO: Asignar el hash dinámico real del backend ---
     document.getElementById('detHash').innerText = cot.hash_original;
     
     document.getElementById('logFirma').innerText = "Esperando dictamen del cliente...";
-    
     cambiarVista('view-details');
 }
 
@@ -197,7 +179,6 @@ document.getElementById('btnRechazar').onclick = async () => {
         const res = await fetch(`${API_URL}/cotizaciones/${cotizacionSeleccionada.idcotizacion}/rechazar`, { method: "POST" });
         if(res.ok) {
             alert("Cotización rechazada.");
-            usuarioSesion = usuarioSesion; // Forzar refresco
             await verificarEstadoYConsultarBandeja();
         }
     } catch (err) { alert("Error al procesar acción."); }
@@ -211,7 +192,6 @@ document.getElementById('btnFirmarAceptar').onclick = async () => {
     logDiv.style.color = "#00ff00";
     logDiv.innerText = "Extrayendo firma digital de la llave privada local...";
 
-    // Control de seguridad por si se refresca la página (la RAM se limpia por diseño de llaves efímeras)
     if (!llavePrivadaLocal) {
         logDiv.style.color = "#f44336";
         logDiv.innerText = "❌ ERROR DE INTEGRIDAD: La llave privada se destruyó al cerrar/refrescar la app. Por favor, cierra sesión y vuelve a enrolar tu dispositivo.";
@@ -219,7 +199,6 @@ document.getElementById('btnFirmarAceptar').onclick = async () => {
     }
 
     try {
-        // Generamos la firma (r, s) llamando a tu crypto_pwa.js
         const firmaB64 = await firmarHashDocumento(llavePrivadaLocal, hashContrato);
         logDiv.innerText += "\n> Firma geométrica calculada con éxito.";
         logDiv.innerText += "\n> Transmitiendo paquete de validación matemática al monolito...";
@@ -250,16 +229,14 @@ document.getElementById('btnFirmarAceptar').onclick = async () => {
         logDiv.innerText += `\n❌ Fallo en red: ${err.message}`;
     }
 };
-// 1. Guardar llave en la memoria del navegador
+
+// --- MÓDULO DE PERSISTENCIA LOCAL (STORAGE) ---
 async function guardarLlavePrivadaEnCelular(privateKey) {
     const jwk = await window.crypto.subtle.exportKey("jwk", privateKey);
-    // Ahora el nombre de la llave es único por usuario, ej: "llave_privada_ecdsa_5"
     localStorage.setItem(`llave_privada_ecdsa_${usuarioSesion.id_cliente}`, JSON.stringify(jwk));
 }
 
-// 2. Recuperar llave cuando el cliente vuelve un mes después
 async function cargarLlavePrivadaDelCelular() {
-    // Buscamos solo la llave que le pertenece a este ID
     const jwkStr = localStorage.getItem(`llave_privada_ecdsa_${usuarioSesion.id_cliente}`);
     if (!jwkStr) return null; 
     
@@ -272,16 +249,6 @@ async function cargarLlavePrivadaDelCelular() {
         ["sign"]
     );
 }
-// Al cargar la PWA, recuperamos la sesión si existe
-window.onload = () => {
-    const sesionGuardada = localStorage.getItem("clienteSesion");
-    if (sesionGuardada) {
-        usuarioSesion = JSON.parse(sesionGuardada);
-        // Automáticamente cargamos su bandeja de entrada
-        verificarEstadoYConsultarBandeja();
-    }
-};
-
 
 function cerrarSesion() {
     localStorage.removeItem("clienteSesion");
@@ -293,3 +260,20 @@ function cerrarSesion() {
     document.getElementById('formLoginPWA').reset();
     document.getElementById('statusLogin').innerText = "";
 }
+
+// --- RESTAURACIÓN AUTOMÁTICA COMPLETA AL INICIAR LA PWA ---
+// Usamos addEventListener para evitar colisiones con otros scripts criptográficos
+window.addEventListener("load", async () => {
+    const sesionGuardada = localStorage.getItem("clienteSesion");
+    if (sesionGuardada && sesionGuardada !== "undefined") {
+        try {
+            usuarioSesion = JSON.parse(sesionGuardada);
+            if (usuarioSesion && usuarioSesion.id_cliente) {
+                await verificarEstadoYConsultarBandeja();
+            }
+        } catch (e) {
+            console.error("Error al restaurar el llavero o sesión: ", e);
+            cerrarSesion();
+        }
+    }
+});
