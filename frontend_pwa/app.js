@@ -14,6 +14,7 @@ function cambiarVista(idVistaObjetivo) {
 }
 
 // --- FLUJO 1: LOGEAR USUARIO ---
+// --- FLUJO 1: LOGEAR USUARIO ---
 document.getElementById('formLoginPWA').onsubmit = async (e) => {
     e.preventDefault();
     const errorDiv = document.getElementById('statusLogin');
@@ -36,8 +37,6 @@ document.getElementById('formLoginPWA').onsubmit = async (e) => {
         }
 
         const data = await response.json();
-        localStorage.setItem("clienteSesion", JSON.stringify(data.usuario));
-        usuarioSesion = data.usuario;
         
         // REGLA DE ARQUITECTURA: La PWA solo permite el acceso a Clientes
         if (data.role !== "Cliente") {
@@ -45,6 +44,8 @@ document.getElementById('formLoginPWA').onsubmit = async (e) => {
             return;
         }
 
+        // CORRECCIÓN: Guardamos 'data' directamente porque el JSON viene plano desde el monolito
+        localStorage.setItem("clienteSesion", JSON.stringify(data));
         usuarioSesion = data;
         errorDiv.innerText = "";
         
@@ -56,6 +57,15 @@ document.getElementById('formLoginPWA').onsubmit = async (e) => {
     }
 };
 
+// --- RESTAURACIÓN AUTOMÁTICA AL REFRESCAR ---
+window.onload = () => {
+    const sesionGuardada = localStorage.getItem("clienteSesion");
+    // Validamos que exista y que no se haya guardado un string "undefined" por error
+    if (sesionGuardada && sesionGuardada !== "undefined") {
+        usuarioSesion = JSON.parse(sesionGuardada);
+        verificarEstadoYConsultarBandeja();
+    }
+};
 
 // --- FLUJO 2: INSPECCIÓN CRYPTO Y BANDEJA ---
 async function verificarEstadoYConsultarBandeja() {
