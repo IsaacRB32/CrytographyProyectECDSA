@@ -122,10 +122,15 @@ def crear_cotizacion(cotizacion: CotizacionCreate):
     conn = get_db_connection()
     try:
         with conn.cursor() as cur:
+            # --- NUEVO: Generar el Hash Dinámico SHA-256 ---
+            cadena_contrato = f"{cotizacion.monto}|{cotizacion.detalles}"
+            hash_calculado = hashlib.sha256(cadena_contrato.encode('utf-8')).hexdigest()
+            
+            # Guardamos la cotización y su hash en la misma transacción
             cur.execute(
-                """INSERT INTO Cotizacion (idCliente, idVendedor, monto, detalles, estado) 
-                   VALUES (%s, %s, %s, %s, 'Pendiente') RETURNING idCotizacion""",
-                (cotizacion.id_cliente, cotizacion.id_vendedor, cotizacion.monto, cotizacion.detalles)
+                """INSERT INTO Cotizacion (idCliente, idVendedor, monto, detalles, estado, hash_original) 
+                   VALUES (%s, %s, %s, %s, 'Pendiente', %s) RETURNING idCotizacion""",
+                (cotizacion.id_cliente, cotizacion.id_vendedor, cotizacion.monto, cotizacion.detalles, hash_calculado)
             )
             id_cotizacion = cur.fetchone()["idcotizacion"]
         conn.commit()
@@ -251,7 +256,7 @@ def obtener_cotizaciones_cliente(id_cliente: int):
 
             # Luego, traemos sus cotizaciones pendientes
             cur.execute("""
-                SELECT idCotizacion, monto, detalles, estado, fecha_creacion 
+                SELECT idCotizacion, monto, detalles, estado, fecha_creacion, hash_original 
                 FROM Cotizacion 
                 WHERE idCliente = %s AND estado = 'Pendiente'
                 ORDER BY fecha_creacion DESC

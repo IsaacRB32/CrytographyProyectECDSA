@@ -164,8 +164,9 @@ function verDetalleCotizacion(cot) {
     document.getElementById('detMonto').innerText = cot.monto;
     document.getElementById('detEspecificaciones').innerText = cot.detalles;
     
-    // Generamos un HASH SHA-256 estático de prueba para la simulación del contrato congelado
-    document.getElementById('detHash').innerText = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855";
+    // --- NUEVO: Asignar el hash dinámico real del backend ---
+    document.getElementById('detHash').innerText = cot.hash_original;
+    
     document.getElementById('logFirma').innerText = "Esperando dictamen del cliente...";
     
     cambiarVista('view-details');
