@@ -315,10 +315,16 @@
         try {
             const res = await fetch(`${API_URL}/admin/cotizaciones/${id}`, { method: "DELETE" });
             const data = await res.json();
-            alert(data.mensaje);
-            cargarDatosConsolaAdmin(); // Refrescar tabla automáticamente
+            
+            if (res.ok) {
+                alert(data.mensaje);
+                cargarDatosConsolaAdmin(); // Refrescar tabla automáticamente
+            } else {
+                // Atrapamos el error real que manda FastAPI (ej. violación de llaves foráneas)
+                alert(`❌ No se pudo borrar: ${data.detail}`);
+            }
         } catch (err) {
-            alert("No se pudo conectar con el servicio de borrado.");
+            alert("❌ Fallo de red al intentar conectar con el servicio de borrado.");
         }
     }
 
@@ -328,13 +334,17 @@
         try {
             const res = await fetch(`${API_URL}/admin/vaciar_registros_sandbox`, { method: "POST" });
             const data = await res.json();
-            alert(data.mensaje);
-            cargarDatosConsolaAdmin(); // Refrescar tabla automáticamente
             
-            // Opcional: Limpiar mensajes de estado previos en el formulario de ventas
-            document.getElementById('statusCotizacion').innerText = "Estado: Esperando captura...";
+            if (res.ok) {
+                alert(data.mensaje);
+                cargarDatosConsolaAdmin(); // Refrescar tabla automáticamente
+                document.getElementById('statusCotizacion').innerText = "Estado: Esperando captura...";
+            } else {
+                // Atrapamos el error real que manda FastAPI
+                alert(`❌ Error al vaciar: ${data.detail}`);
+            }
         } catch (err) {
-            alert("Error crítico ejecutando el comando de truncado en Render.");
+            alert("❌ Error crítico ejecutando el comando en Render.");
         }
     }
 </script>
