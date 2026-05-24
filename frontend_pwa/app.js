@@ -277,3 +277,27 @@ window.addEventListener("load", async () => {
         }
     }
 });
+
+// --- CONTROL DE INICIALIZACIÓN INMEDIATA (ELIMINA EL PARPADEO VISUAL) ---
+async function inicializarPWA() {
+    const sesionGuardada = localStorage.getItem("clienteSesion");
+    
+    if (sesionGuardada && sesionGuardada !== "undefined") {
+        try {
+            usuarioSesion = JSON.parse(sesionGuardada);
+            if (usuarioSesion && usuarioSesion.id_cliente) {
+                // SI HAY SESIÓN: El login se queda oculto y brincamos directo a validar la bandeja
+                await verificarEstadoYConsultarBandeja();
+                return;
+            }
+        } catch (e) {
+            console.error("Error crítico al restaurar la sesión persistente: ", e);
+        }
+    }
+    
+    // SI NO HAY SESIÓN: Forzamos a que se muestre el login de inmediato
+    cambiarVista('view-login');
+}
+
+// Se ejecuta en caliente al cargar el archivo JS eliminando la latencia del window.load
+inicializarPWA();
