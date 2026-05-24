@@ -238,18 +238,18 @@ document.getElementById('btnFirmarAceptar').onclick = async () => {
 };
 // 1. Guardar llave en la memoria del navegador
 async function guardarLlavePrivadaEnCelular(privateKey) {
-    // Exportamos a formato JWK (JSON Web Key)
     const jwk = await window.crypto.subtle.exportKey("jwk", privateKey);
-    localStorage.setItem("mi_llave_privada_ecdsa", JSON.stringify(jwk));
+    // Ahora el nombre de la llave es único por usuario, ej: "llave_privada_ecdsa_5"
+    localStorage.setItem(`llave_privada_ecdsa_${usuarioSesion.id_cliente}`, JSON.stringify(jwk));
 }
 
 // 2. Recuperar llave cuando el cliente vuelve un mes después
 async function cargarLlavePrivadaDelCelular() {
-    const jwkStr = localStorage.getItem("mi_llave_privada_ecdsa");
-    if (!jwkStr) return null; // No hay llave guardada
+    // Buscamos solo la llave que le pertenece a este ID
+    const jwkStr = localStorage.getItem(`llave_privada_ecdsa_${usuarioSesion.id_cliente}`);
+    if (!jwkStr) return null; 
     
     const jwk = JSON.parse(jwkStr);
-    // Reconstruimos el objeto CryptoKey matemático
     return await window.crypto.subtle.importKey(
         "jwk",
         jwk,
