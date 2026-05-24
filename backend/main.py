@@ -297,3 +297,74 @@ def rechazar_cotizacion(id_cotizacion: int):
             return {"mensaje": "Cotización rechazada exitosamente"}
     finally:
         conn.close()
+
+# --- NUEVO: ENDPOINTS DE ADMINISTRACIÓN Y CONTROL CRUD PARA MANTENIMIENTO ---
+
+@app.get("/api/v1/admin/tablas_resumen")
+def obtener_resumen_tablas():
+    """Retorna una lista completa de las cotizaciones y clientes para gestión directa."""
+    conn = get_db_connection()
+    if not conn:
+        raise HTTPException(status_code=500, detail="Error al conectar con PostgreSQL")
+    try:
+        with conn.cursor() as cur:
+            # Obtener todas las cotizaciones con sus estados actuales
+            cur.execute("""
+                SELECT idCotizacion, idCliente, idVendedor, monto, estado, fecha_creacion 
+                FROM Cotizacion 
+                ORDER BY idCotizacion DESC
+            """)
+            cotizaciones = cur.fetchall()
+            
+            # Obtener todos los clientes registrados
+            cur.execute("""
+                SELECT idCliente, NombreEmpresa, llave_publica 
+                FROM Cliente 
+                ORDER BY idCliente DESC
+            """)
+            clientes = cur.fetchall()
+            
+            return {
+                "status": "success",
+                "cotizaciones": cotizaciones,
+                "clientes": clientes
+            }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error en consulta administrativa: {e}")
+    finally:
+        conn.close()
+
+@app.delete("/api/v1/admin/cotizaciones/{id_cotizacion}")
+def eliminar_cotizacion_individual(id_cotizacion: int):
+    """Elimina una cotización específica usando su ID."""
+    conn = get_db_connection()
+    try:
+        with conn.cursor() as cur:
+            cur.execute("DELETE FROM Cotizacion WHERE idCotizacion = %s RETURNING idCotizacion", (id_cotizacion,))
+            result = cur.fetchone()
+            if not result:
+                raise HTTPException(status_code=404, detail="La cotización seleccionada no existe")
+        conn.commit()
+        return {"status": "success", "mensaje": f"Cotización #{id_cotizacion} eliminada del sistema."}
+    except Exception as e:
+        conn.rollback()
+        raise HTTPException(status_code=400, detail=str(e))
+    finally:
+        conn.close()
+
+@app.post("/api/v1/admin/vaciar_registros_sandbox")
+def vaciar_registros_sandbox():
+    """Limpia por completo las cotizaciones y las alertas de auditoría para reiniciar pruebas."""
+    conn = get_db_connection()
+    try:
+        with conn.cursor() as cur:
+            # Se elimina primero la tabla dependiente por integridad referencial (llaves foráneas)
+            cur.execute("TRUNCATE TABLE Registro_Auditoria RESTART IDENTITY CASCADE")
+            cur.execute("TRUNCATE TABLE Cotizacion RESTART IDENTITY CASCADE")
+        conn.commit()
+        return {"status": "success", "mensaje": "🔄 Tablas transaccionales limpiadas e IDs reiniciados con éxito."}
+    except Exception as e:
+        conn.rollback()
+        raise HTTPException(status_code=500, detail=f"Error al truncar registros de prueba: {e}")
+    finally:
+        conn.close()

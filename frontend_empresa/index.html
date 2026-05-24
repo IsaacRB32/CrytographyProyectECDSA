@@ -80,6 +80,33 @@
                 <div class="status-box" id="statusCotizacion">Estado: Esperando captura...</div>
             </div>
         </div>
+        <div class="card" style="background: #fff; border-top: 4px solid #4a5568; margin-top: 25px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e2e8f0; padding-bottom: 10px;">
+                <h3 style="margin: 0; color: #2d3748;">🛠️ Consola de Mantenimiento y Datos (Sandbox)</h3>
+                <button onclick="vaciarSandboxCompleto()" style="width: auto; background: #e53e3e; margin: 0; padding: 8px 15px;">⚠️ Vaciar Cotizaciones y Auditoría</button>
+            </div>
+            
+            <p style="font-size: 13px; color: #4a5568; margin-top: 10px;">
+                Usa este panel para eliminar registros corruptos o inconsistentes generados durante las pruebas sin alterar la estructura del esquema central en Render.
+            </p>
+
+            <div style="margin-top: 15px;">
+                <h4>📋 Monitoreo en Tiempo Real de Cotizaciones</h4>
+                <table id="tablaAdminCotizaciones" style="width: 100%; border-collapse: collapse; font-size: 13px;">
+                    <thead>
+                        <tr style="background: #edf2f7;">
+                            <th style="padding: 8px;">ID</th>
+                            <th style="padding: 8px;">Cliente ID</th>
+                            <th style="padding: 8px;">Monto</th>
+                            <th style="padding: 8px;">Estado Actual</th>
+                            <th style="padding: 8px; text-align: center;">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        </tbody>
+                </table>
+            </div>
+        </div>
     </div>
 
     <div id="vistaFinanzas" class="card hidden">
@@ -154,10 +181,11 @@
         if (usuarioActual.role === "Ventas") {
             document.getElementById('nombreVendedor').innerText = usuarioActual.username;
             document.getElementById('vistaVentas').classList.remove('hidden');
+            cargarDatosConsolaAdmin(); // <--- AGREGAR ESTA LÍNEA
         } else if (usuarioActual.role === "Finanzas") {
             document.getElementById('nombreAuditor').innerText = usuarioActual.username;
             document.getElementById('vistaFinanzas').classList.remove('hidden');
-            cargarAuditoria(); // Carga la tabla automáticamente al entrar
+            cargarAuditoria();
         }
     }
 
@@ -238,6 +266,71 @@
             });
         } catch (err) {
             tbody.innerHTML = "<tr><td colspan='4'>❌ Error al conectar con el monolito.</td></tr>";
+        }
+    }
+    async function cargarDatosConsolaAdmin() {
+        const tbody = document.querySelector('#tablaAdminCotizaciones tbody');
+        tbody.innerHTML = "<tr><td colspan='5' style='text-align:center;'>Consultando registros contables...</td></tr>";
+        
+        try {
+            const res = await fetch(`${API_URL}/admin/tablas_resumen`);
+            const json = await res.json();
+            
+            if (!json.cotizaciones || json.cotizaciones.length === 0) {
+                tbody.innerHTML = "<tr><td colspan='5' style='text-align:center; color:#718096;'>No hay cotizaciones activas en la base de datos.</td></tr>";
+                return;
+            }
+            
+            tbody.innerHTML = "";
+            json.cotizaciones.forEach(cot => {
+                let colorEstado = "#4a5568";
+                if(cot.estado === "Firmada") colorEstado = "#38a169";
+                if(cot.estado === "Alterada") colorEstado = "#e53e3e";
+                if(cot.estado === "Pendiente") colorEstado = "#dd6b20";
+
+                tbody.innerHTML += `
+                    <tr style="border-bottom: 1px solid #edf2f7;">
+                        <td style="padding: 8px; font-weight: bold;">#${cot.idcotizacion}</td>
+                        <td style="padding: 8px;">ID Client: ${cot.idcliente}</td>
+                        <td style="padding: 8px; font-weight: bold;">$${cot.monto}</td>
+                        <td style="padding: 8px;"><span style="color: ${colorEstado}; font-weight: bold;">${cot.estado}</span></td>
+                        <td style="padding: 8px; text-align: center;">
+                            <button onclick="eliminarCotizacionIndividual(${cot.idcotizacion})" style="background:#e53e3e; padding: 4px 8px; font-size: 11px; margin: 0; width: auto;">Eliminar</button>
+                        </td>
+                    </tr>
+                `;
+            });
+        } catch (err) {
+            tbody.innerHTML = "<tr><td colspan='5' style='text-align:center; color:red;'>Error al mapear la consola de mantenimiento.</td></tr>";
+        }
+    }
+
+    async function eliminarCotizacionIndividual(id) {
+        if(!confirm(`¿Estás seguro de borrar permanentemente la Cotización #${id}? Esto liberará el historial.`)) return;
+        
+        try {
+            const res = await fetch(`${API_URL}/admin/cotizaciones/${id}`, { method: "DELETE" });
+            const data = await res.json();
+            alert(data.mensaje);
+            cargarDatosConsolaAdmin(); // Refrescar tabla automáticamente
+        } catch (err) {
+            alert("No se pudo conectar con el servicio de borrado.");
+        }
+    }
+
+    async function vaciarSandboxCompleto() {
+        if(!confirm("⚠️ ATENCIÓN: Vas a vaciar por completo las tablas 'Cotizacion' y 'Registro_Auditoria'. Esto reiniciará el contador de IDs a 1. ¿Deseas continuar?")) return;
+        
+        try {
+            const res = await fetch(`${API_URL}/admin/vaciar_registros_sandbox`, { method: "POST" });
+            const data = await res.json();
+            alert(data.mensaje);
+            cargarDatosConsolaAdmin(); // Refrescar tabla automáticamente
+            
+            // Opcional: Limpiar mensajes de estado previos en el formulario de ventas
+            document.getElementById('statusCotizacion').innerText = "Estado: Esperando captura...";
+        } catch (err) {
+            alert("Error crítico ejecutando el comando de truncado en Render.");
         }
     }
 </script>
