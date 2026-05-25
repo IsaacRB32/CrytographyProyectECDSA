@@ -434,7 +434,7 @@
                 // Configurar icono y color
                 const iconMap = {
                     warning: { bg: 'warning', text: '!' },
-                    danger: { bg: 'danger', text: '!' },
+                    danger: { bg: 'danger', text: '✕' },
                     success: { bg: 'success', text: '✓' },
                     info: { bg: 'info', text: 'i' }
                 };
@@ -484,25 +484,44 @@
             });
         }
 
-        function mostrarAlerta(mensaje, tipo = 'info') {
+        function mostrarAlerta(mensaje, tipo = 'info', tituloPersonalizado = null) {
+            const titulosPorDefecto = {
+                success: 'Operación Exitosa',
+                danger: 'Error',
+                warning: 'Advertencia',
+                info: 'Información'
+            };
             return mostrarModal({
                 tipo,
-                titulo: tipo === 'success' ? 'Operación Exitosa' : (tipo === 'danger' ? 'Error' : 'Información'),
+                titulo: tituloPersonalizado || titulosPorDefecto[tipo] || 'Notificación',
                 mensaje,
                 botones: [{ texto: 'Aceptar', clase: 'btn-primary', valor: true }]
             });
         }
 
-        function mostrarConfirmacion(mensaje) {
+        function mostrarConfirmacion(mensaje, tituloPersonalizado = null) {
             return mostrarModal({
                 tipo: 'warning',
-                titulo: 'Confirmación Requerida',
+                titulo: tituloPersonalizado || 'Confirmación Requerida',
                 mensaje,
                 botones: [
                     { texto: 'Cancelar', clase: 'btn-secondary', valor: false },
                     { texto: 'Confirmar', clase: 'btn-danger', valor: true }
                 ]
             });
+        }
+
+        // ─── Función helper para actualizar status box y mostrar modal ───
+        function actualizarEstadoYNotificar(statusDiv, exito, mensajeExito, mensajeError) {
+            if (exito) {
+                statusDiv.className = 'status-box success';
+                statusDiv.innerText = mensajeExito;
+                mostrarAlerta(mensajeExito, 'success', 'Proceso Completado');
+            } else {
+                statusDiv.className = 'status-box error';
+                statusDiv.innerText = mensajeError;
+                mostrarAlerta(mensajeError, 'danger', 'Error en el Proceso');
+            }
         }
 
         // ─── Gestión de pestañas ─────────────
@@ -528,7 +547,7 @@
         document.getElementById('formLogin').onsubmit = async (e) => {
             e.preventDefault();
             const errorDiv = document.getElementById('statusLogin');
-            errorDiv.innerText = "Verificando...";
+            errorDiv.innerText = "Verificando credenciales...";
 
             try {
                 const res = await fetch(`${API_URL}/usuarios/login`, {
@@ -544,13 +563,18 @@
                     usuarioActual = await res.json();
                     localStorage.setItem("usuarioSesion", JSON.stringify(usuarioActual));
                     errorDiv.innerText = "";
+                    mostrarAlerta(`Bienvenido, ${usuarioActual.username}. Ha iniciado sesión correctamente.`, 'success', 'Acceso Concedido');
                     mostrarVistaCorrespondiente();
                 } else {
                     const data = await res.json();
-                    errorDiv.innerText = "Error: " + (data.detail || "Credenciales inválidas");
+                    const mensajeError = data.detail || "Credenciales inválidas. Verifique sus datos.";
+                    errorDiv.innerText = mensajeError;
+                    mostrarAlerta(mensajeError, 'danger', 'Error de Autenticación');
                 }
             } catch (err) {
-                errorDiv.innerText = "Error de red. Intente nuevamente.";
+                const mensajeError = "Error de conexión. Verifique su red e intente nuevamente.";
+                errorDiv.innerText = mensajeError;
+                mostrarAlerta(mensajeError, 'danger', 'Error de Red');
             }
         };
 
@@ -572,7 +596,7 @@
                 document.getElementById('vistaFinanzas').classList.remove('hidden');
                 cargarAuditoria();
             } else {
-                mostrarAlerta("Acceso denegado: Las cuentas de Cliente deben iniciar sesión desde la aplicación móvil (PWA).", "danger");
+                mostrarAlerta("Acceso denegado: Las cuentas de Cliente deben iniciar sesión desde la aplicación móvil (PWA).", 'danger', 'Acceso Restringido');
                 cerrarSesion();
             }
         }
@@ -592,7 +616,7 @@
             e.preventDefault();
             const statusDiv = document.getElementById('statusUsuario');
             statusDiv.className = 'status-box';
-            statusDiv.innerText = "Procesando registro...";
+            statusDiv.innerText = "Procesando registro del cliente...";
             try {
                 const res = await fetch(`${API_URL}/usuarios/registrar`, {
                     method: "POST",
@@ -604,16 +628,13 @@
                     })
                 });
                 const data = await res.json();
-                if (res.ok) {
-                    statusDiv.className = 'status-box success';
-                    statusDiv.innerText = "Éxito: " + (data.mensaje || "Cliente registrado correctamente.");
-                } else {
-                    statusDiv.className = 'status-box error';
-                    statusDiv.innerText = "Error: " + (data.detail || "No se pudo registrar.");
-                }
+                const exito = res.ok;
+                const mensajeExito = data.mensaje || "Cliente registrado correctamente.";
+                const mensajeError = data.detail || "No se pudo registrar al cliente.";
+                actualizarEstadoYNotificar(statusDiv, exito, mensajeExito, mensajeError);
             } catch (err) {
-                statusDiv.className = 'status-box error';
-                statusDiv.innerText = "Error de red al registrar cliente.";
+                const mensajeError = "Error de red al conectar con el servidor de registro.";
+                actualizarEstadoYNotificar(statusDiv, false, "", mensajeError);
             }
         };
 
@@ -621,7 +642,7 @@
             e.preventDefault();
             const statusDiv = document.getElementById('statusCotizacion');
             statusDiv.className = 'status-box';
-            statusDiv.innerText = "Enviando cotización...";
+            statusDiv.innerText = "Generando cotización...";
             try {
                 const res = await fetch(`${API_URL}/cotizaciones/crear`, {
                     method: "POST",
@@ -634,16 +655,13 @@
                     })
                 });
                 const data = await res.json();
-                if (res.ok) {
-                    statusDiv.className = 'status-box success';
-                    statusDiv.innerText = "Éxito: ID " + data.id_cotizacion + ". Esperando firma del cliente.";
-                } else {
-                    statusDiv.className = 'status-box error';
-                    statusDiv.innerText = "Error: " + (data.detail || "No se pudo crear la cotización.");
-                }
+                const exito = res.ok;
+                const mensajeExito = `Cotización #${data.id_cotizacion} creada. Esperando firma del cliente.`;
+                const mensajeError = data.detail || "No se pudo crear la cotización.";
+                actualizarEstadoYNotificar(statusDiv, exito, mensajeExito, mensajeError);
             } catch (err) {
-                statusDiv.className = 'status-box error';
-                statusDiv.innerText = "Error de red al enviar cotización.";
+                const mensajeError = "Error de red al enviar la cotización.";
+                actualizarEstadoYNotificar(statusDiv, false, "", mensajeError);
             }
         };
 
@@ -674,6 +692,7 @@
                 });
             } catch (err) {
                 tbody.innerHTML = "<tr><td colspan='4' style='text-align:center; color:#dc2626; padding:20px;'>Error al conectar con el servicio de auditoría.</td></tr>";
+                mostrarAlerta("No se pudo recuperar el registro de auditoría. Verifique la conexión.", 'danger', 'Error de Sincronización');
             }
         }
 
@@ -710,12 +729,14 @@
                 });
             } catch (err) {
                 tbody.innerHTML = "<tr><td colspan='5' style='text-align:center; color:#dc2626; padding:20px;'>Error al mapear la consola de mantenimiento.</td></tr>";
+                mostrarAlerta("No se pudo cargar la consola de administración. Intente nuevamente.", 'danger', 'Error de Carga');
             }
         }
 
         async function eliminarCotizacionIndividual(id) {
             const confirmado = await mostrarConfirmacion(
-                `¿Confirma que desea borrar permanentemente la Cotización #${id}? Esta acción liberará el historial asociado.`
+                `¿Confirma que desea borrar permanentemente la Cotización #${id}? Esta acción eliminará el historial asociado y no se puede deshacer.`,
+                'Eliminar Cotización'
             );
             if (!confirmado) return;
 
@@ -724,19 +745,20 @@
                 const data = await res.json();
 
                 if (res.ok) {
-                    await mostrarAlerta(data.mensaje || "Cotización eliminada correctamente.", "success");
+                    await mostrarAlerta(data.mensaje || `Cotización #${id} eliminada correctamente.`, 'success', 'Eliminación Exitosa');
                     cargarDatosConsolaAdmin();
                 } else {
-                    await mostrarAlerta("No se pudo borrar: " + (data.detail || "Error desconocido."), "danger");
+                    await mostrarAlerta("No se pudo eliminar la cotización: " + (data.detail || "Error desconocido."), 'danger', 'Error de Eliminación');
                 }
             } catch (err) {
-                await mostrarAlerta("Fallo de red al intentar conectar con el servicio de borrado.", "danger");
+                await mostrarAlerta("Fallo de red al intentar eliminar la cotización. Verifique su conexión.", 'danger', 'Error de Conexión');
             }
         }
 
         async function vaciarSandboxCompleto() {
             const confirmado = await mostrarConfirmacion(
-                "ATENCIÓN: Va a vaciar por completo las tablas 'Cotizacion' y 'Registro_Auditoria'. Esto reiniciará el contador de IDs a 1. ¿Desea continuar?"
+                "Está a punto de vaciar por completo las tablas 'Cotizacion' y 'Registro_Auditoria'. Esta acción reiniciará el contador de IDs a 1 y eliminará todos los registros. ¿Desea continuar?",
+                'Vaciar Base de Datos Sandbox'
             );
             if (!confirmado) return;
 
@@ -745,15 +767,15 @@
                 const data = await res.json();
 
                 if (res.ok) {
-                    await mostrarAlerta(data.mensaje || "Registros eliminados.", "success");
+                    await mostrarAlerta(data.mensaje || "Todos los registros han sido eliminados correctamente.", 'success', 'Sandbox Reiniciado');
                     cargarDatosConsolaAdmin();
                     document.getElementById('statusCotizacion').innerText = "Estado: Esperando captura...";
                     document.getElementById('statusCotizacion').className = 'status-box';
                 } else {
-                    await mostrarAlerta("Error al vaciar: " + (data.detail || "Error desconocido."), "danger");
+                    await mostrarAlerta("Error al vaciar el sandbox: " + (data.detail || "Error desconocido."), 'danger', 'Error de Sistema');
                 }
             } catch (err) {
-                await mostrarAlerta("Error crítico ejecutando el comando en Render.", "danger");
+                await mostrarAlerta("Error crítico al ejecutar el comando en Render. Verifique la conexión con el servidor.", 'danger', 'Error Crítico');
             }
         }
 
