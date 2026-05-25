@@ -151,7 +151,6 @@ async function verificarEstadoYConsultarBandeja() {
             cache: 'no-store'
         });
         const data = await response.json();
-        
         cotizacionesEnBandeja = data.cotizaciones_pendientes;
 
         llavePrivadaLocal = await cargarLlavePrivadaDelCelular();
@@ -305,6 +304,7 @@ document.getElementById('btnFirmarAceptar').onclick = async () => {
         return;
     }
 
+    // 1. Deshabilitamos el botón inmediatamente
     btnFirmar.disabled = true;
     btnFirmar.innerText = "Firmando...";
 
@@ -324,14 +324,23 @@ document.getElementById('btnFirmarAceptar').onclick = async () => {
         
         if (response.ok) {
             await mostrarAlerta("¡Contrato sellado e íntegro! Transacción autorizada.", "success", "Firma Exitosa");
+            volverAlInbox();
             await verificarEstadoYConsultarBandeja();
         } else {
+            // 2. Mostramos el mensaje discreto de error
             await mostrarAlerta(data.detail || "Firma rechazada.", "danger");
+            
+            // 3. 🔥 FIX: Obligamos a la PWA a salir de los detalles de la cotización alterada
+            volverAlInbox();
+            
+            // 4. 🔥 FIX: Recargamos la bandeja en tiempo real (ahora ignorará la caché)
+            await verificarEstadoYConsultarBandeja();
         }
 
     } catch (err) {
         await mostrarAlerta("Error de conexión al firmar.", "danger");
     } finally {
+        // Se reactiva el botón oculto para que esté listo en la siguiente cotización sana que se abra
         btnFirmar.disabled = false;
         btnFirmar.innerText = "Sellar y Aceptar";
     }
