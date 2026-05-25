@@ -147,8 +147,11 @@ document.getElementById('formLoginPWA').onsubmit = async (e) => {
 
 async function verificarEstadoYConsultarBandeja() {
     try {
-        const response = await fetch(`${API_URL}/clientes/${usuarioSesion.id_cliente}/cotizaciones`);
+        const response = await fetch(`${API_URL}/clientes/${usuarioSesion.id_cliente}/cotizaciones`, {
+            cache: 'no-store'
+        });
         const data = await response.json();
+        
         cotizacionesEnBandeja = data.cotizaciones_pendientes;
 
         llavePrivadaLocal = await cargarLlavePrivadaDelCelular();
@@ -233,11 +236,13 @@ document.getElementById('btnRegistrarLlaves').onclick = async () => {
             await mostrarAlerta("¡Contrato sellado e íntegro! Transacción autorizada.", "success", "Firma Exitosa");
             await verificarEstadoYConsultarBandeja();
         } else {
-            // 🤫 Muestra tu mensaje discreto del Backend
+            // 1. Se muestra tu mensaje discreto y profesional
             await mostrarAlerta(data.detail || "Firma rechazada.", "danger");
-            
-            // 🔥 EL FIX: Forzamos a la app a limpiar la vista recargando la bandeja.
-            // Al recargar, como el backend ya la cambió a 'Alterada', desaparecerá al instante.
+
+            // 2. 🔥 Forzamos visualmente a la PWA a salir de los detalles y regresar a la lista
+            volverAlInbox();
+
+            // 3. 🔥 Recargamos la bandeja con la petición (que ahora ignorará la caché)
             await verificarEstadoYConsultarBandeja();
         }
     } catch (err) {
