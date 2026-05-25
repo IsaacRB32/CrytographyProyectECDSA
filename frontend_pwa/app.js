@@ -99,10 +99,10 @@ function cambiarVista(idVistaObjetivo) {
 // Login
 document.getElementById('formLoginPWA').onsubmit = async (e) => {
     e.preventDefault();
-    const errorDiv = document.getElementById('statusLogin');
-    errorDiv.style.display = 'block';
-    errorDiv.innerText = "Validando identidad en la nube...";
-    errorDiv.className = 'status-box';
+    const btnLogin = document.getElementById('btnLogin');
+    const originalText = btnLogin.innerText;
+    btnLogin.innerText = "Verificando...";
+    btnLogin.disabled = true;
 
     try {
         const response = await fetch(`${API_URL}/usuarios/login`, {
@@ -116,29 +116,32 @@ document.getElementById('formLoginPWA').onsubmit = async (e) => {
 
         if (!response.ok) {
             const errData = await response.json();
-            errorDiv.className = 'status-box error';
-            errorDiv.innerText = errData.detail;
+            await mostrarAlerta(errData.detail || "Credenciales inválidas.", "danger", "Error de Autenticación");
+            btnLogin.innerText = originalText;
+            btnLogin.disabled = false;
             return;
         }
 
         const data = await response.json();
         
         if (data.role !== "Cliente") {
-            errorDiv.className = 'status-box error';
-            errorDiv.innerText = "Acceso denegado: Esta aplicación móvil es exclusiva para perfiles Cliente.";
+            await mostrarAlerta("Acceso denegado: Esta aplicación móvil es exclusiva para perfiles Cliente.", "danger", "Acceso Restringido");
+            btnLogin.innerText = originalText;
+            btnLogin.disabled = false;
             return;
         }
 
         localStorage.setItem("clienteSesion", JSON.stringify(data));
         usuarioSesion = data;
-        errorDiv.style.display = 'none';
-        errorDiv.innerText = "";
+        btnLogin.innerText = originalText;
+        btnLogin.disabled = false;
         
         await verificarEstadoYConsultarBandeja();
 
     } catch (err) {
-        errorDiv.className = 'status-box error';
-        errorDiv.innerText = "Error: El monolito central está fuera de línea.";
+        await mostrarAlerta("Error de conexión. El servicio central está fuera de línea.", "danger", "Error de Red");
+        btnLogin.innerText = originalText;
+        btnLogin.disabled = false;
     }
 };
 
@@ -202,8 +205,11 @@ function cargarVistaBandejaInbox() {
 // Setup de llaves
 document.getElementById('btnRegistrarLlaves').onclick = async () => {
     const logDiv = document.getElementById('logSetup');
+    const btnRegistrar = document.getElementById('btnRegistrarLlaves');
     logDiv.className = 'status-box';
     logDiv.innerText = "Calculando curvas elípticas en hardware local...";
+    btnRegistrar.disabled = true;
+    btnRegistrar.innerText = "Generando...";
 
     try {
         const parDeLlaves = await generarParDeLlaves();
@@ -232,10 +238,15 @@ document.getElementById('btnRegistrarLlaves').onclick = async () => {
         } else {
             logDiv.className = 'status-box error';
             logDiv.innerText += "\nError registrando llave en el servidor.";
+            await mostrarAlerta("No se pudo registrar la llave pública en el servidor.", "danger");
         }
     } catch (err) {
         logDiv.className = 'status-box error';
         logDiv.innerText += `\nFallo en hardware crypto: ${err.message}`;
+        await mostrarAlerta("Error generando el par de llaves.", "danger");
+    } finally {
+        btnRegistrar.disabled = false;
+        btnRegistrar.innerText = "Generar y Registrar Identidad";
     }
 };
 
@@ -247,9 +258,6 @@ function verDetalleCotizacion(cot) {
     document.getElementById('detEspecificaciones').innerText = cot.detalles;
     document.getElementById('detHash').innerText = cot.hash_original;
     
-    const logFirma = document.getElementById('logFirma');
-    logFirma.className = 'status-box';
-    logFirma.innerText = "Esperando dictamen del cliente...";
     cambiarVista('view-details');
 }
 
@@ -261,6 +269,10 @@ function volverAlInbox() {
 document.getElementById('btnRechazar').onclick = async () => {
     const confirmado = await mostrarConfirmacion("¿Está seguro de que desea rechazar esta cotización?", "Rechazar Cotización");
     if (!confirmado) return;
+
+    const btnRechazar = document.getElementById('btnRechazar');
+    btnRechazar.disabled = true;
+    btnRechazar.innerText = "Procesando...";
     
     try {
         const res = await fetch(`${API_URL}/cotizaciones/${cotizacionSeleccionada.idcotizacion}/rechazar`, { method: "POST" });
@@ -273,28 +285,27 @@ document.getElementById('btnRechazar').onclick = async () => {
         }
     } catch (err) { 
         await mostrarAlerta("Error al procesar acción.", "danger");
+    } finally {
+        btnRechazar.disabled = false;
+        btnRechazar.innerText = "Rechazar";
     }
 };
 
 document.getElementById('btnFirmarAceptar').onclick = async () => {
-    const logDiv = document.getElementById('logFirma');
     const hashContrato = document.getElementById('detHash').innerText;
+    const btnFirmar = document.getElementById('btnFirmarAceptar');
     
-    logDiv.className = 'status-box';
-    logDiv.innerText = "Extrayendo firma digital de la llave privada local...";
-
     if (!llavePrivadaLocal) {
-        logDiv.className = 'status-box error';
-        logDiv.innerText = "ERROR DE INTEGRIDAD: La llave privada se destruyó al cerrar/refrescar la app. Por favor, cierra sesión y vuelve a enrolar tu dispositivo.";
         await mostrarAlerta("Llave privada no encontrada. Re-enrole su dispositivo.", "danger", "Error de Integridad");
         return;
     }
 
+    btnFirmar.disabled = true;
+    btnFirmar.innerText = "Firmando...";
+
     try {
         const firmaB64 = await firmarHashDocumento(llavePrivadaLocal, hashContrato);
-        logDiv.innerText += "\n> Firma geométrica calculada con éxito.";
-        logDiv.innerText += "\n> Transmitiendo paquete de validación matemática al monolito...";
-
+        
         const response = await fetch(`${API_URL}/cotizaciones/${cotizacionSeleccionada.idcotizacion}/firmar`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -307,20 +318,17 @@ document.getElementById('btnFirmarAceptar').onclick = async () => {
         const data = await response.json();
         
         if (response.ok) {
-            logDiv.className = 'status-box success';
-            logDiv.innerText += `\nDictamen del Servidor: ${data.mensaje}`;
             await mostrarAlerta("¡Contrato sellado e íntegro! Transacción autorizada.", "success", "Firma Exitosa");
             await verificarEstadoYConsultarBandeja();
         } else {
-            logDiv.className = 'status-box error';
-            logDiv.innerText += `\nRECHAZADO: ${data.detail}`;
             await mostrarAlerta(data.detail || "Firma rechazada.", "danger");
         }
 
     } catch (err) {
-        logDiv.className = 'status-box error';
-        logDiv.innerText += `\nFallo en red: ${err.message}`;
         await mostrarAlerta("Error de conexión al firmar.", "danger");
+    } finally {
+        btnFirmar.disabled = false;
+        btnFirmar.innerText = "Sellar y Aceptar";
     }
 };
 
@@ -352,8 +360,6 @@ function cerrarSesion() {
     cotizacionSeleccionada = null;
     cambiarVista('view-login');
     document.getElementById('formLoginPWA').reset();
-    document.getElementById('statusLogin').style.display = 'none';
-    document.getElementById('statusLogin').innerText = "";
 }
 
 // Inicialización
