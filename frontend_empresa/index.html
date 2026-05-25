@@ -81,6 +81,7 @@
             display: flex; align-items: center; justify-content: center;
             font-weight: 600; font-size: 0.75rem; color: #475569; flex-shrink: 0; text-transform: uppercase;
         }
+        .user-avatar.finanzas { background: #fee2e2; color: #991b1b; }
 
         /* ── Cards ──────────────────────────── */
         .card {
@@ -97,6 +98,14 @@
         .card-accent-danger {
             border-left: 4px solid var(--danger); background: var(--danger-bg);
             border: 1px solid var(--danger-border); border-left-width: 4px; border-radius: var(--radius-lg);
+        }
+        .card-accent-info {
+            border-left: 4px solid var(--info); background: var(--info-bg);
+            border: 1px solid var(--info-border); border-left-width: 4px; border-radius: var(--radius-lg);
+        }
+        .card-accent-warning {
+            border-left: 4px solid var(--warning); background: var(--warning-bg);
+            border: 1px solid var(--warning-border); border-left-width: 4px; border-radius: var(--radius-lg);
         }
 
         /* ── Tabs ───────────────────────────── */
@@ -147,16 +156,6 @@
         }
         .btn-logout:hover { background: #fef2f2; color: var(--danger); border-color: var(--danger-border); }
 
-        /* ── Status box ─────────────────────── */
-        .status-box {
-            margin-top: 14px; padding: 10px 14px; border-radius: var(--radius);
-            font-family: 'SF Mono', 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
-            font-size: 0.78rem; background: #f8fafc; border: 1px solid var(--border);
-            color: var(--text-secondary); letter-spacing: 0.1px; transition: all var(--transition);
-        }
-        .status-box.success { background: var(--success-bg); border-color: var(--success-border); color: #065f46; }
-        .status-box.error { background: var(--danger-bg); border-color: var(--danger-border); color: #991b1b; }
-
         /* ── Tables ─────────────────────────── */
         table { width: 100%; border-collapse: collapse; font-size: 0.84rem; }
         thead th {
@@ -187,6 +186,7 @@
         .mt-0 { margin-top: 0; }
         .mb-0 { margin-bottom: 0; }
         .mb-3 { margin-bottom: 16px; }
+        .mb-4 { margin-bottom: 24px; }
 
         /* ── Login card ─────────────────────── */
         .login-card {
@@ -198,6 +198,18 @@
         .login-error { color: var(--danger); font-size: 0.82rem; margin-top: 10px; font-weight: 500; min-height: 20px; }
 
         .sandbox-card { border-top: 3px solid #475569; }
+
+        /* ── Stats Grid ─────────────────────── */
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px; }
+        .stat-card {
+            background: var(--surface); padding: 20px; border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-xs); border: 1px solid var(--border-light); text-align: center;
+        }
+        .stat-value { font-size: 2rem; font-weight: 700; color: #0f172a; margin: 0 0 4px 0; }
+        .stat-label { font-size: 0.75rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; }
+        .stat-card.danger .stat-value { color: var(--danger); }
+        .stat-card.success .stat-value { color: var(--success); }
+        .stat-card.warning .stat-value { color: var(--warning); }
 
         /* ── Modal System ───────────────────── */
         .modal-overlay {
@@ -235,6 +247,7 @@
             .login-card { margin: 24px auto; padding: 24px 18px; }
             .tab-btn { padding: 8px 12px; font-size: 0.78rem; }
             .modal-dialog { padding: 22px 18px 18px; }
+            .stats-grid { grid-template-columns: 1fr; }
         }
     </style>
 </head>
@@ -283,7 +296,7 @@
                 </div>
             </div>
 
-            <div class="tabs-container" id="tabNavigation">
+            <div class="tabs-container" id="tabNavigationVentas">
                 <button class="tab-btn active" data-tab="tab-clientes">Clientes</button>
                 <button class="tab-btn" data-tab="tab-cotizaciones">Cotizaciones</button>
                 <button class="tab-btn" data-tab="tab-consola">Consola de Mantenimiento</button>
@@ -309,7 +322,6 @@
                         <input type="hidden" id="userRole" value="Cliente">
                         <button type="submit" class="btn-primary">Crear Cuenta de Cliente</button>
                     </form>
-                    <div class="status-box" id="statusUsuario">Estado: Esperando captura...</div>
                 </div>
             </div>
 
@@ -336,7 +348,6 @@
                         </div>
                         <button type="submit" class="btn-primary" style="background:#0d9488; border-color:#0d9488;">Enviar a Pre-Firma</button>
                     </form>
-                    <div class="status-box" id="statusCotizacion">Estado: Esperando captura...</div>
                 </div>
             </div>
 
@@ -371,39 +382,111 @@
         </div>
 
         <!-- ── Vista de Finanzas ─────────────── -->
-        <div id="vistaFinanzas" class="card hidden">
-            <div class="section-header" style="border-bottom-width:2px;">
-                <div>
-                    <h2 style="font-size:1.2rem; margin:0;">Panel de Auditoría Financiera</h2>
-                    <p class="card-meta mb-0">Auditor Activo: <b id="nombreAuditor"></b></p>
+        <div id="vistaFinanzas" class="hidden">
+            <div class="app-header">
+                <div class="app-brand">
+                    <div class="app-logo">TF</div>
+                    <div>
+                        <h1 class="app-title">Trustflow</h1>
+                        <p class="app-subtitle">Panel de Auditoría Financiera</p>
+                    </div>
                 </div>
-                <button class="btn-logout" onclick="cerrarSesion()">Cerrar sesión</button>
+                <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+                    <div class="user-badge">
+                        <div class="user-avatar finanzas" id="avatarAuditor">A</div>
+                        <span id="nombreAuditor" style="font-weight:600;"></span>
+                    </div>
+                    <button class="btn-logout" onclick="cerrarSesion()">Cerrar sesión</button>
+                </div>
             </div>
 
-            <div class="card card-accent-danger" style="box-shadow:none; margin-bottom:20px;">
-                <h4 style="margin-top:0; color:#991b1b; font-size:0.9rem; font-weight:600;">Módulo Criptográfico de Alertas (ECDSA)</h4>
-                <p class="text-sm mb-0" style="color:#7f1d1d;">
-                    Aquí se mostrarán automáticamente los intentos de alteración de montos o modificaciones no autorizadas por la firma del cliente.
-                </p>
+            <!-- Pestañas de navegación para Finanzas -->
+            <div class="tabs-container" id="tabNavigationFinanzas">
+                <button class="tab-btn active" data-tab="tab-resumen">Resumen</button>
+                <button class="tab-btn" data-tab="tab-alertas">Alertas Criptográficas</button>
+                <button class="tab-btn" data-tab="tab-historial">Historial de Integridad</button>
             </div>
 
-            <div class="section-header">
-                <h3>Registro de Integridad Transaccional</h3>
-                <button onclick="cargarAuditoria()" class="btn-secondary btn-sm">Actualizar datos</button>
+            <!-- Panel de Resumen -->
+            <div class="tab-panel active" id="tab-resumen">
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-value" id="totalAlertas">0</div>
+                        <div class="stat-label">Alertas Detectadas</div>
+                    </div>
+                    <div class="stat-card warning">
+                        <div class="stat-value" id="totalAlteraciones">0</div>
+                        <div class="stat-label">Alteraciones</div>
+                    </div>
+                    <div class="stat-card danger">
+                        <div class="stat-value" id="totalFraudes">0</div>
+                        <div class="stat-label">Intentos de Fraude</div>
+                    </div>
+                </div>
+                <div class="card card-accent-info">
+                    <h4 style="margin-top:0; color:#3730a3; font-size:0.9rem; font-weight:600;">Estado del Sistema de Integridad</h4>
+                    <p class="text-sm mb-0" style="color:#4338ca;">
+                        El módulo ECDSA está monitoreando activamente todas las transacciones. Cualquier intento de modificación no autorizada será registrado y notificado en tiempo real.
+                    </p>
+                </div>
             </div>
 
-            <div style="overflow-x:auto;">
-                <table id="tablaAuditoria">
-                    <thead>
-                        <tr>
-                            <th>Fecha</th>
-                            <th>ID Cotización</th>
-                            <th>Alerta Detectada</th>
-                            <th>Detalles Criptográficos</th>
-                        </tr>
-                    </thead>
-                    <tbody></tbody>
-                </table>
+            <!-- Panel de Alertas Criptográficas -->
+            <div class="tab-panel" id="tab-alertas">
+                <div class="card card-accent-danger">
+                    <h4 style="margin-top:0; color:#991b1b; font-size:0.9rem; font-weight:600;">Módulo Criptográfico de Alertas (ECDSA)</h4>
+                    <p class="text-sm mb-0" style="color:#7f1d1d;">
+                        Aquí se mostrarán automáticamente los intentos de alteración de montos o modificaciones no autorizadas por la firma del cliente. Las alertas se actualizan en tiempo real.
+                    </p>
+                </div>
+                <div class="card">
+                    <div class="section-header">
+                        <h3>Alertas Activas del Sistema</h3>
+                        <button onclick="cargarAuditoria()" class="btn-secondary btn-sm">Actualizar Alertas</button>
+                    </div>
+                    <div style="overflow-x:auto;">
+                        <table id="tablaAlertas">
+                            <thead>
+                                <tr>
+                                    <th>Fecha</th>
+                                    <th>ID Cotización</th>
+                                    <th>Alerta Detectada</th>
+                                    <th>Detalles Criptográficos</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Panel de Historial de Integridad -->
+            <div class="tab-panel" id="tab-historial">
+                <div class="card">
+                    <div class="section-header">
+                        <h3>Registro de Integridad Transaccional</h3>
+                        <div style="display:flex; gap:8px;">
+                            <button onclick="cargarHistorialCompleto()" class="btn-secondary btn-sm">Historial Completo</button>
+                            <button onclick="exportarHistorial()" class="btn-secondary btn-sm">Exportar</button>
+                        </div>
+                    </div>
+                    <p class="text-sm text-muted mb-3">
+                        Este registro contiene el historial completo de todas las transacciones que han sido monitoreadas por el sistema ECDSA, incluyendo aquellas que no presentaron irregularidades.
+                    </p>
+                    <div style="overflow-x:auto;">
+                        <table id="tablaHistorial">
+                            <thead>
+                                <tr>
+                                    <th>Fecha</th>
+                                    <th>ID Cotización</th>
+                                    <th>Acción</th>
+                                    <th>Estado</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -431,7 +514,6 @@
                 const msgEl = document.getElementById('modalMessage');
                 const actionsEl = document.getElementById('modalActions');
 
-                // Configurar icono y color
                 const iconMap = {
                     warning: { bg: 'warning', text: '!' },
                     danger: { bg: 'danger', text: '✕' },
@@ -445,7 +527,6 @@
                 titleEl.innerText = titulo || 'Notificación';
                 msgEl.innerText = mensaje || '';
 
-                // Construir botones
                 actionsEl.innerHTML = '';
                 botones.forEach((btn, index) => {
                     const button = document.createElement('button');
@@ -458,7 +539,6 @@
                     actionsEl.appendChild(button);
                 });
 
-                // Si no hay botones, crear uno por defecto
                 if (botones.length === 0) {
                     const defaultBtn = document.createElement('button');
                     defaultBtn.innerText = 'Aceptar';
@@ -473,7 +553,6 @@
                 overlay.classList.add('active');
                 document.body.style.overflow = 'hidden';
 
-                // Cerrar con Escape
                 const handleEsc = (e) => { if (e.key === 'Escape') { cerrarModal(); resolve(undefined); } };
                 document.addEventListener('keydown', handleEsc, { once: true });
 
@@ -511,34 +590,35 @@
             });
         }
 
-        // ─── Función helper para actualizar status box y mostrar modal ───
-        function actualizarEstadoYNotificar(statusDiv, exito, mensajeExito, mensajeError) {
-            if (exito) {
-                statusDiv.className = 'status-box success';
-                statusDiv.innerText = mensajeExito;
-                mostrarAlerta(mensajeExito, 'success', 'Proceso Completado');
-            } else {
-                statusDiv.className = 'status-box error';
-                statusDiv.innerText = mensajeError;
-                mostrarAlerta(mensajeError, 'danger', 'Error en el Proceso');
-            }
-        }
-
         // ─── Gestión de pestañas ─────────────
-        function inicializarTabs() {
-            const tabButtons = document.querySelectorAll('#tabNavigation .tab-btn');
-            const tabPanels = document.querySelectorAll('.tab-panel');
+        function inicializarTabs(containerId) {
+            const tabButtons = document.querySelectorAll(`#${containerId} .tab-btn`);
+            const tabPanels = document.querySelectorAll(`#${containerId} ~ .tab-panel, #vistaFinanzas .tab-panel`);
 
             tabButtons.forEach(btn => {
                 btn.addEventListener('click', () => {
                     const target = btn.getAttribute('data-tab');
-                    tabButtons.forEach(b => b.classList.remove('active'));
+                    const parentContainer = btn.closest('.tabs-container').parentElement;
+
+                    // Actualizar botones
+                    btn.parentElement.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
                     btn.classList.add('active');
-                    tabPanels.forEach(panel => {
+
+                    // Mostrar panel correspondiente
+                    parentContainer.querySelectorAll('.tab-panel').forEach(panel => {
                         panel.classList.remove('active');
                         if (panel.id === target) panel.classList.add('active');
                     });
-                    if (target === 'tab-consola') cargarDatosConsolaAdmin();
+
+                    // Cargar datos según la pestaña activada
+                    if (containerId === 'tabNavigationFinanzas') {
+                        if (target === 'tab-alertas') cargarAuditoria();
+                        if (target === 'tab-historial') cargarHistorialCompleto();
+                        if (target === 'tab-resumen') actualizarEstadisticas();
+                    }
+                    if (containerId === 'tabNavigationVentas' && target === 'tab-consola') {
+                        cargarDatosConsolaAdmin();
+                    }
                 });
             });
         }
@@ -563,18 +643,18 @@
                     usuarioActual = await res.json();
                     localStorage.setItem("usuarioSesion", JSON.stringify(usuarioActual));
                     errorDiv.innerText = "";
-                    mostrarAlerta(`Bienvenido, ${usuarioActual.username}. Ha iniciado sesión correctamente.`, 'success', 'Acceso Concedido');
+                    await mostrarAlerta(`Bienvenido, ${usuarioActual.username}. Ha iniciado sesión correctamente.`, 'success', 'Acceso Concedido');
                     mostrarVistaCorrespondiente();
                 } else {
                     const data = await res.json();
                     const mensajeError = data.detail || "Credenciales inválidas. Verifique sus datos.";
                     errorDiv.innerText = mensajeError;
-                    mostrarAlerta(mensajeError, 'danger', 'Error de Autenticación');
+                    await mostrarAlerta(mensajeError, 'danger', 'Error de Autenticación');
                 }
             } catch (err) {
                 const mensajeError = "Error de conexión. Verifique su red e intente nuevamente.";
                 errorDiv.innerText = mensajeError;
-                mostrarAlerta(mensajeError, 'danger', 'Error de Red');
+                await mostrarAlerta(mensajeError, 'danger', 'Error de Red');
             }
         };
 
@@ -588,13 +668,18 @@
                     avatar.innerText = usuarioActual.username.charAt(0).toUpperCase();
                 }
                 document.getElementById('vistaVentas').classList.remove('hidden');
-                inicializarTabs();
-                document.getElementById('statusUsuario').innerText = "Estado: Esperando captura...";
-                document.getElementById('statusCotizacion').innerText = "Estado: Esperando captura...";
+                document.getElementById('vistaFinanzas').classList.add('hidden');
+                inicializarTabs('tabNavigationVentas');
             } else if (usuarioActual.role === "Finanzas") {
                 document.getElementById('nombreAuditor').innerText = usuarioActual.username;
+                const avatar = document.getElementById('avatarAuditor');
+                if (avatar && usuarioActual.username) {
+                    avatar.innerText = usuarioActual.username.charAt(0).toUpperCase();
+                }
                 document.getElementById('vistaFinanzas').classList.remove('hidden');
-                cargarAuditoria();
+                document.getElementById('vistaVentas').classList.add('hidden');
+                inicializarTabs('tabNavigationFinanzas');
+                actualizarEstadisticas();
             } else {
                 mostrarAlerta("Acceso denegado: Las cuentas de Cliente deben iniciar sesión desde la aplicación móvil (PWA).", 'danger', 'Acceso Restringido');
                 cerrarSesion();
@@ -614,9 +699,11 @@
         // ─── LÓGICA DE VENTAS ──────────────────
         document.getElementById('formUsuario').onsubmit = async (e) => {
             e.preventDefault();
-            const statusDiv = document.getElementById('statusUsuario');
-            statusDiv.className = 'status-box';
-            statusDiv.innerText = "Procesando registro del cliente...";
+            const submitBtn = document.querySelector('#formUsuario .btn-primary');
+            const originalText = submitBtn.innerText;
+            submitBtn.innerText = "Procesando...";
+            submitBtn.disabled = true;
+
             try {
                 const res = await fetch(`${API_URL}/usuarios/registrar`, {
                     method: "POST",
@@ -628,21 +715,29 @@
                     })
                 });
                 const data = await res.json();
-                const exito = res.ok;
-                const mensajeExito = data.mensaje || "Cliente registrado correctamente.";
-                const mensajeError = data.detail || "No se pudo registrar al cliente.";
-                actualizarEstadoYNotificar(statusDiv, exito, mensajeExito, mensajeError);
+
+                if (res.ok) {
+                    await mostrarAlerta(data.mensaje || "Cliente registrado correctamente.", 'success', 'Cliente Creado');
+                    document.getElementById('formUsuario').reset();
+                    document.getElementById('userPassword').value = '123';
+                } else {
+                    await mostrarAlerta(data.detail || "No se pudo registrar al cliente.", 'danger', 'Error de Registro');
+                }
             } catch (err) {
-                const mensajeError = "Error de red al conectar con el servidor de registro.";
-                actualizarEstadoYNotificar(statusDiv, false, "", mensajeError);
+                await mostrarAlerta("Error de red al conectar con el servidor de registro.", 'danger', 'Error de Conexión');
+            } finally {
+                submitBtn.innerText = originalText;
+                submitBtn.disabled = false;
             }
         };
 
         document.getElementById('formCotizacion').onsubmit = async (e) => {
             e.preventDefault();
-            const statusDiv = document.getElementById('statusCotizacion');
-            statusDiv.className = 'status-box';
-            statusDiv.innerText = "Generando cotización...";
+            const submitBtn = document.querySelector('#formCotizacion .btn-primary');
+            const originalText = submitBtn.innerText;
+            submitBtn.innerText = "Generando...";
+            submitBtn.disabled = true;
+
             try {
                 const res = await fetch(`${API_URL}/cotizaciones/crear`, {
                     method: "POST",
@@ -655,27 +750,51 @@
                     })
                 });
                 const data = await res.json();
-                const exito = res.ok;
-                const mensajeExito = `Cotización #${data.id_cotizacion} creada. Esperando firma del cliente.`;
-                const mensajeError = data.detail || "No se pudo crear la cotización.";
-                actualizarEstadoYNotificar(statusDiv, exito, mensajeExito, mensajeError);
+
+                if (res.ok) {
+                    await mostrarAlerta(`Cotización #${data.id_cotizacion} creada exitosamente. Esperando firma del cliente.`, 'success', 'Cotización Emitida');
+                    document.getElementById('formCotizacion').reset();
+                } else {
+                    await mostrarAlerta(data.detail || "No se pudo crear la cotización.", 'danger', 'Error de Cotización');
+                }
             } catch (err) {
-                const mensajeError = "Error de red al enviar la cotización.";
-                actualizarEstadoYNotificar(statusDiv, false, "", mensajeError);
+                await mostrarAlerta("Error de red al enviar la cotización.", 'danger', 'Error de Conexión');
+            } finally {
+                submitBtn.innerText = originalText;
+                submitBtn.disabled = false;
             }
         };
 
         // ─── LÓGICA DE FINANZAS ────────────────
+        async function actualizarEstadisticas() {
+            try {
+                const res = await fetch(`${API_URL}/auditoria`);
+                const json = await res.json();
+
+                if (json.data) {
+                    const totalAlertas = json.data.length;
+                    const alteraciones = json.data.filter(r => r.accion === 'ALTERACION').length;
+                    const fraudes = json.data.filter(r => r.accion === 'FRAUDE' || r.accion === 'MODIFICACION').length;
+
+                    document.getElementById('totalAlertas').innerText = totalAlertas;
+                    document.getElementById('totalAlteraciones').innerText = alteraciones;
+                    document.getElementById('totalFraudes').innerText = fraudes;
+                }
+            } catch (err) {
+                console.log("Error al cargar estadísticas:", err);
+            }
+        }
+
         async function cargarAuditoria() {
-            const tbody = document.querySelector('#tablaAuditoria tbody');
-            tbody.innerHTML = "<tr><td colspan='4' style='text-align:center; color:#64748b; padding:20px;'>Cargando registros criptográficos...</td></tr>";
+            const tbody = document.querySelector('#tablaAlertas tbody');
+            tbody.innerHTML = "<tr><td colspan='4' style='text-align:center; color:#64748b; padding:20px;'>Cargando alertas criptográficas...</td></tr>";
 
             try {
                 const res = await fetch(`${API_URL}/auditoria`);
                 const json = await res.json();
 
                 if (json.data.length === 0) {
-                    tbody.innerHTML = "<tr><td colspan='4' style='text-align:center; color:#64748b; padding:20px;'>No se han detectado alteraciones o fraudes.</td></tr>";
+                    tbody.innerHTML = "<tr><td colspan='4' style='text-align:center; color:#64748b; padding:20px;'>No se han detectado alteraciones o fraudes en el sistema.</td></tr>";
                     return;
                 }
 
@@ -690,10 +809,48 @@
                         <td class="mono-text">${reg.datos_anteriores}</td>
                     </tr>`;
                 });
+                actualizarEstadisticas();
             } catch (err) {
                 tbody.innerHTML = "<tr><td colspan='4' style='text-align:center; color:#dc2626; padding:20px;'>Error al conectar con el servicio de auditoría.</td></tr>";
-                mostrarAlerta("No se pudo recuperar el registro de auditoría. Verifique la conexión.", 'danger', 'Error de Sincronización');
+                await mostrarAlerta("No se pudo recuperar el registro de alertas. Verifique la conexión.", 'danger', 'Error de Sincronización');
             }
+        }
+
+        async function cargarHistorialCompleto() {
+            const tbody = document.querySelector('#tablaHistorial tbody');
+            tbody.innerHTML = "<tr><td colspan='4' style='text-align:center; color:#64748b; padding:20px;'>Cargando historial completo de transacciones...</td></tr>";
+
+            try {
+                const res = await fetch(`${API_URL}/auditoria`);
+                const json = await res.json();
+
+                if (json.data.length === 0) {
+                    tbody.innerHTML = "<tr><td colspan='4' style='text-align:center; color:#64748b; padding:20px;'>El historial de integridad está limpio. No se han registrado eventos.</td></tr>";
+                    return;
+                }
+
+                tbody.innerHTML = "";
+                json.data.forEach(reg => {
+                    const fecha = new Date(reg.fecha_evento).toLocaleString('es-MX');
+                    let badgeClass = 'badge-neutral';
+                    if (reg.accion === 'ALTERACION') badgeClass = 'badge-warning';
+                    if (reg.accion === 'FRAUDE') badgeClass = 'badge-danger';
+
+                    tbody.innerHTML += `
+                    <tr>
+                        <td>${fecha}</td>
+                        <td><strong>#${reg.idcotizacion}</strong></td>
+                        <td>${reg.accion}</td>
+                        <td><span class="badge ${badgeClass}">${reg.accion === 'ALTERACION' ? 'Revisado' : 'Crítico'}</span></td>
+                    </tr>`;
+                });
+            } catch (err) {
+                tbody.innerHTML = "<tr><td colspan='4' style='text-align:center; color:#dc2626; padding:20px;'>Error al cargar el historial de integridad.</td></tr>";
+            }
+        }
+
+        async function exportarHistorial() {
+            await mostrarAlerta("La funcionalidad de exportación estará disponible en la próxima actualización del sistema.", 'info', 'Funcionalidad en Desarrollo');
         }
 
         async function cargarDatosConsolaAdmin() {
@@ -729,7 +886,7 @@
                 });
             } catch (err) {
                 tbody.innerHTML = "<tr><td colspan='5' style='text-align:center; color:#dc2626; padding:20px;'>Error al mapear la consola de mantenimiento.</td></tr>";
-                mostrarAlerta("No se pudo cargar la consola de administración. Intente nuevamente.", 'danger', 'Error de Carga');
+                await mostrarAlerta("No se pudo cargar la consola de administración. Intente nuevamente.", 'danger', 'Error de Carga');
             }
         }
 
@@ -769,8 +926,6 @@
                 if (res.ok) {
                     await mostrarAlerta(data.mensaje || "Todos los registros han sido eliminados correctamente.", 'success', 'Sandbox Reiniciado');
                     cargarDatosConsolaAdmin();
-                    document.getElementById('statusCotizacion').innerText = "Estado: Esperando captura...";
-                    document.getElementById('statusCotizacion').className = 'status-box';
                 } else {
                     await mostrarAlerta("Error al vaciar el sandbox: " + (data.detail || "Error desconocido."), 'danger', 'Error de Sistema');
                 }
