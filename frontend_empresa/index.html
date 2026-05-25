@@ -249,6 +249,25 @@
             .modal-dialog { padding: 22px 18px 18px; }
             .stats-grid { grid-template-columns: 1fr; }
         }
+        /* ── Autocompletado de Clientes ────────── */
+        .custom-dropdown {
+            position: absolute; top: 100%; left: 0; right: 0;
+            background: var(--surface); border: 1px solid var(--primary-border);
+            border-radius: var(--radius); box-shadow: var(--shadow-lg);
+            max-height: 220px; overflow-y: auto; z-index: 100;
+            margin-top: 4px; padding: 0; list-style: none;
+        }
+        .custom-dropdown li {
+            padding: 12px 16px; cursor: pointer; border-bottom: 1px solid var(--border-light);
+            font-size: 0.88rem; transition: background var(--transition);
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .custom-dropdown li:last-child { border-bottom: none; }
+        .custom-dropdown li:hover { background: var(--primary-light); color: var(--primary-hover); }
+        .client-id-badge {
+            font-size: 0.7rem; background: var(--border); padding: 2px 6px;
+            border-radius: 12px; color: var(--text-secondary);
+        }
     </style>
 </head>
 <body>
@@ -334,12 +353,14 @@
                         </div>
                     </div>
                     <form id="formCotizacion">
-                        <div class="form-group">
-                            <label for="cotIdCliente">ID del Cliente Destino</label>
-                            <input type="number" id="cotIdCliente" placeholder="Ej. 5" required>
+                        <div class="form-group" style="position: relative;">
+                            <label for="cotBuscadorCliente">Cliente Destino</label>
+                            <input type="text" id="cotBuscadorCliente" placeholder="Buscar por nombre de empresa o ID..." autocomplete="off" required>
+                            <input type="hidden" id="cotIdCliente" required>
+                            <ul id="dropdownClientes" class="custom-dropdown hidden"></ul>
                         </div>
                         <div class="form-group">
-                            <label for="cotMonto">Monto de la Transacción (USD)</label>
+                            <label for="cotMonto">Monto de la Transacción (MXN)</label>
                             <input type="number" id="cotMonto" step="0.01" placeholder="0.00" required>
                         </div>
                         <div class="form-group">
@@ -504,6 +525,75 @@
     <script>
         const API_URL = "https://crytographyproyectecdsa.onrender.com/api/v1";
         let usuarioActual = null;
+
+        let listaClientesGlobal = [];
+
+        // Descarga el catálogo de clientes en segundo plano
+        async function cargarClientesParaBuscador() {
+            try {
+                const res = await fetch(`${API_URL}/admin/tablas_resumen`);
+                const json = await res.json();
+                if (json.clientes) {
+                    listaClientesGlobal = json.clientes;
+                }
+            } catch (err) {
+                console.error("Error cargando el catálogo de clientes:", err);
+            }
+        }
+
+        // Lógica reactiva del input
+        const buscadorInput = document.getElementById('cotBuscadorCliente');
+        const inputOcultoId = document.getElementById('cotIdCliente');
+        const dropdownList = document.getElementById('dropdownClientes');
+
+        if(buscadorInput && dropdownList) {
+            buscadorInput.addEventListener('input', () => {
+                const texto = buscadorInput.value.toLowerCase().trim();
+                inputOcultoId.value = ""; // Resetea el ID oculto si el usuario borra o edita a mano
+
+                dropdownList.innerHTML = "";
+                if (!texto) {
+                    dropdownList.classList.add('hidden');
+                    return;
+                }
+
+                // Filtrar por nombre o por ID numérico
+                const filtrados = listaClientesGlobal.filter(c => {
+                    const nombre = (c.nombreempresa || c.NombreEmpresa || "").toLowerCase();
+                    const idStr = (c.idcliente || c.idCliente || "").toString();
+                    return nombre.includes(texto) || idStr.includes(texto);
+                });
+
+                if (filtrados.length === 0) {
+                    dropdownList.innerHTML = `<li style="color:var(--text-muted); justify-content:center;">No se encontraron clientes</li>`;
+                } else {
+                    filtrados.forEach(c => {
+                        const li = document.createElement('li');
+                        const nombreEmpresa = c.nombreempresa || c.NombreEmpresa;
+                        const idC = c.idcliente || c.idCliente;
+                        
+                        li.innerHTML = `<strong>${nombreEmpresa}</strong> <span class="client-id-badge">ID: ${idC}</span>`;
+                        li.onclick = () => {
+                            buscadorInput.value = nombreEmpresa;
+                            inputOcultoId.value = idC;
+                            dropdownList.classList.add('hidden');
+                        };
+                        dropdownList.appendChild(li);
+                    });
+                }
+                dropdownList.classList.remove('hidden');
+            });
+
+            // Ocultar dropdown al hacer click fuera (con ligero retraso para permitir el click)
+            buscadorInput.addEventListener('blur', () => {
+                setTimeout(() => dropdownList.classList.add('hidden'), 200);
+            });
+            
+            // Volver a mostrar si se hace click en el input y ya hay texto
+            buscadorInput.addEventListener('focus', () => {
+                if (buscadorInput.value) buscadorInput.dispatchEvent(new Event('input'));
+            });
+        }
 
         // ─── Sistema de Modales ─────────────────
         function mostrarModal({ tipo = 'info', titulo, mensaje, botones = [] }) {
@@ -670,6 +760,7 @@
                 document.getElementById('vistaVentas').classList.remove('hidden');
                 document.getElementById('vistaFinanzas').classList.add('hidden');
                 inicializarTabs('tabNavigationVentas');
+                cargarClientesParaBuscador();
             } else if (usuarioActual.role === "Finanzas") {
                 document.getElementById('nombreAuditor').innerText = usuarioActual.username;
                 const avatar = document.getElementById('avatarAuditor');
@@ -720,6 +811,7 @@
                     await mostrarAlerta(data.mensaje || "Cliente registrado correctamente.", 'success', 'Cliente Creado');
                     document.getElementById('formUsuario').reset();
                     document.getElementById('userPassword').value = '123';
+                    cargarClientesParaBuscador();
                 } else {
                     await mostrarAlerta(data.detail || "No se pudo registrar al cliente.", 'danger', 'Error de Registro');
                 }
@@ -733,6 +825,10 @@
 
         document.getElementById('formCotizacion').onsubmit = async (e) => {
             e.preventDefault();
+            if (!document.getElementById('cotIdCliente').value) {
+                await mostrarAlerta("Por favor, busque y seleccione un cliente válido de la lista desplegable.", 'warning', 'Cliente Inválido');
+                return;
+            }
             const submitBtn = document.querySelector('#formCotizacion .btn-primary');
             const originalText = submitBtn.innerText;
             submitBtn.innerText = "Generando...";
@@ -941,6 +1037,7 @@
                 mostrarVistaCorrespondiente();
             }
         };
+        
     </script>
 </body>
 </html>
