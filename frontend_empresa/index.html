@@ -569,9 +569,15 @@
                 } else {
                     filtrados.forEach(c => {
                         const li = document.createElement('li');
-                        const nombreEmpresa = c.nombreempresa || c.NombreEmpresa;
+
+                        // 1. Capturamos el nombre de la base de datos de manera segura
+                        let nombreEmpresa = c.nombreempresa || c.NombreEmpresa || "";
+
+                        // 2. 🔥 REEMPLAZO ULTRA-SEGURO POR REGEX: Quita "Empresa de " sin importar mayúsculas/minúsculas o espacios extra
+                        nombreEmpresa = nombreEmpresa.replace(/^empresa de\s+/i, "");
+
                         const idC = c.idcliente || c.idCliente;
-                        
+
                         li.innerHTML = `<strong>${nombreEmpresa}</strong> <span class="client-id-badge">ID: ${idC}</span>`;
                         li.onclick = () => {
                             buscadorInput.value = nombreEmpresa;
@@ -584,12 +590,12 @@
                 dropdownList.classList.remove('hidden');
             });
 
-            // Ocultar dropdown al hacer click fuera (con ligero retraso para permitir el click)
+            // Ocultar dropdown al hacer click fuera (con un ligero retraso para permitir registrar el evento click del item)
             buscadorInput.addEventListener('blur', () => {
                 setTimeout(() => dropdownList.classList.add('hidden'), 200);
             });
             
-            // Volver a mostrar si se hace click en el input y ya hay texto
+            // Volver a mostrar si se hace click en el input y ya hay un texto escrito
             buscadorInput.addEventListener('focus', () => {
                 if (buscadorInput.value) buscadorInput.dispatchEvent(new Event('input'));
             });
