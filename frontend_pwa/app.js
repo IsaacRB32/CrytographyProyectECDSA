@@ -230,15 +230,15 @@ document.getElementById('btnRegistrarLlaves').onclick = async () => {
         });
 
         if (response.ok) {
-            logDiv.className = 'status-box success';
-            logDiv.innerText += "\nIdentidad registrada con éxito. Desbloqueando aplicación...";
-            setTimeout(() => {
-                cargarVistaBandejaInbox();
-            }, 1500);
+            await mostrarAlerta("¡Contrato sellado e íntegro! Transacción autorizada.", "success", "Firma Exitosa");
+            await verificarEstadoYConsultarBandeja();
         } else {
-            logDiv.className = 'status-box error';
-            logDiv.innerText += "\nError registrando llave en el servidor.";
-            await mostrarAlerta("No se pudo registrar la llave pública en el servidor.", "danger");
+            // 🤫 Muestra tu mensaje discreto del Backend
+            await mostrarAlerta(data.detail || "Firma rechazada.", "danger");
+            
+            // 🔥 EL FIX: Forzamos a la app a limpiar la vista recargando la bandeja.
+            // Al recargar, como el backend ya la cambió a 'Alterada', desaparecerá al instante.
+            await verificarEstadoYConsultarBandeja();
         }
     } catch (err) {
         logDiv.className = 'status-box error';
