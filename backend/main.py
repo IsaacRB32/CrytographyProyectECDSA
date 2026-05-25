@@ -123,9 +123,9 @@ def crear_cotizacion(cotizacion: CotizacionCreate):
     try:
         with conn.cursor() as cur:
             # --- NUEVO: Generar el Hash Dinámico SHA-256 ---
-            cadena_contrato = f"{cotizacion.monto}|{cotizacion.detalles}"
+            monto_normalizado = float(cotizacion.monto)
+            cadena_contrato = f"{monto_normalizado}|{cotizacion.detalles}"
             hash_calculado = hashlib.sha256(cadena_contrato.encode('utf-8')).hexdigest()
-            
             # Guardamos la cotización y su hash en la misma transacción
             cur.execute(
                 """INSERT INTO Cotizacion (idCliente, idVendedor, monto, detalles, estado, hash_original) 
@@ -160,7 +160,8 @@ def firmar_cotizacion(id_cotizacion: int, payload: FirmaRequest):
                 raise HTTPException(status_code=404, detail="Cotización no encontrada")
 
             # 2. RECALCULAMOS EL HASH CON LA REALIDAD DE LA BASE DE DATOS
-            cadena_actual = f"{result['monto']}|{result['detalles']}"
+            monto_db_normalizado = float(result['monto'])
+            cadena_actual = f"{monto_db_normalizado}|{result['detalles']}"
             hash_actual_db = hashlib.sha256(cadena_actual.encode('utf-8')).hexdigest()
 
             # 3. EL PERRO GUARDIÁN: Si el hash de la DB no es el que el cliente firmó, hubo fraude.
