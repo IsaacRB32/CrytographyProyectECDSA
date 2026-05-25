@@ -84,7 +84,7 @@ def registrar_usuario(usuario: UsuarioCreate):  # Conservamos tu modelo original
             if rol_normalizado == "Cliente":
                 cur.execute(
                     "INSERT INTO Cliente (NombreEmpresa, idUser) VALUES (%s, %s)",
-                    (f"Empresa de {usuario.username}", id_usuario)
+                    (usuario.username, id_usuario)
                 )
                 
         conn.commit()
