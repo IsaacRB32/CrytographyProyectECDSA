@@ -148,9 +148,9 @@ def firmar_cotizacion(id_cotizacion: int, payload: FirmaRequest):
     conn = get_db_connection()
     try:
         with conn.cursor() as cur:
-            # 1. Traemos los datos actuales (que podrían estar alterados)
+            # 1. Traemos los datos actuales, incluyendo ahora el idVendedor para auditoría 🛡️
             cur.execute("""
-                SELECT c.llave_publica, cot.monto, cot.detalles 
+                SELECT c.llave_publica, cot.monto, cot.detalles, cot.idVendedor 
                 FROM Cliente c 
                 JOIN Cotizacion cot ON c.idCliente = cot.idCliente 
                 WHERE cot.idCotizacion = %s
@@ -167,16 +167,24 @@ def firmar_cotizacion(id_cotizacion: int, payload: FirmaRequest):
 
             # 3. EL PERRO GUARDIÁN: Si el hash de la DB no es el que el cliente firmó, hubo fraude.
             if hash_actual_db != payload.hash_original:
+                # 📈 REGISTRO ENRIQUECIDO: Guardamos el idVendedor en la columna idUsuario
                 cur.execute(
-                    """INSERT INTO Registro_Auditoria (idCotizacion, accion, datos_anteriores) 
-                       VALUES (%s, 'INTENTO_ALTERACION_MONTO', %s)""",
-                    (id_cotizacion, f"El cliente firmó un contrato por un monto distinto al que existe actualmente en BD. Posible fraude de Ventas.")
+                    """INSERT INTO Registro_Auditoria (idCotizacion, idUsuario, accion, datos_anteriores) 
+                       VALUES (%s, %s, 'INTENTO_ALTERACION_MONTO', %s)""",
+                    (
+                        id_cotizacion, 
+                        result['idvendedor'], 
+                        f"Discrepancia de integridad. El cliente intentó firmar datos que no coinciden con la BD de producción. Cotización emitida originalmente por el agente de ventas (Usuario ID: {result['idvendedor']})."
+                    )
                 )
+                # Al cambiar a 'Alterada', automáticamente dejará de listarse en las pendientes del cliente
                 cur.execute("UPDATE Cotizacion SET estado = 'Alterada' WHERE idCotizacion = %s", (id_cotizacion,))
                 conn.commit()
+                
+                # 🤫 MENSAJE DISCRETO Y PROFESIONAL PARA EL CLIENTE:
                 raise HTTPException(
                     status_code=status.HTTP_403_FORBIDDEN, 
-                    detail="⚠️ CRÍTICO: Los datos en el servidor fueron alterados y no coinciden con lo que el cliente autorizó."
+                    detail="La cotización seleccionada ya no se encuentra disponible para firma o requiere una actualización de valores. Por favor, póngase en contacto con su asesor comercial."
                 )
 
             # 4. Si todo está en orden, verificamos la firma matemática (Código original)
@@ -197,22 +205,27 @@ def firmar_cotizacion(id_cotizacion: int, payload: FirmaRequest):
                 conn.commit()
                 return {"status": "success", "mensaje": "Integridad verificada matemáticamente. Transacción sellada exitosamente. ✅"}
             else:
-                # Alerta: Si no coincide, significa que el hash no cuadra o la firma es falsa (Intento de Fraude)
+                # 📈 REGISTRO ENRIQUECIDO: Alerta de fallo matemático asociado al vendedor
                 cur.execute(
-                    """INSERT INTO Registro_Auditoria (idCotizacion, accion, datos_anteriores) 
-                       VALUES (%s, 'FIRMA_INVALIDA', %s)""",
-                    (id_cotizacion, f"Alerta de alteración. Hash enviado: {payload.hash_original}. Monto actual en DB: {result['monto']}")
+                    """INSERT INTO Registro_Auditoria (idCotizacion, idUsuario, accion, datos_anteriores) 
+                       VALUES (%s, %s, 'FIRMA_INVALIDA', %s)""",
+                    (
+                        id_cotizacion, 
+                        result['idvendedor'], 
+                        f"Fallo en la validación geométrica de la curva elíptica. Hash enviado: {payload.hash_original}. Agente responsable de la cotización: Usuario ID {result['idvendedor']}."
+                    )
                 )
-                # Actualizamos el estado para avisar visualmente a Finanzas
                 cur.execute("UPDATE Cotizacion SET estado = 'Alterada' WHERE idCotizacion = %s", (id_cotizacion,))
                 conn.commit()
+                
+                # 🤫 MENSAJE DISCRETO Y PROFESIONAL PARA EL CLIENTE:
                 raise HTTPException(
                     status_code=status.HTTP_403_FORBIDDEN, 
-                    detail="⚠️ CRÍTICO: Violación de integridad detectada. La firma digital no corresponde al documento."
+                    detail="No se pudo completar el proceso de autenticación digital de la oferta. Por motivos de seguridad, el documento ha sido retirado. Solicite una nueva cotización a su asesor."
                 )
     finally:
         conn.close()
-        
+
 @app.post("/api/v1/usuarios/login")
 def login_usuario(credenciales: LoginRequest):
     conn = get_db_connection()
