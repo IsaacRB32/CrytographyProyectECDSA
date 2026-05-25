@@ -1,23 +1,108 @@
-/* frontend_pwa/app.js */
 const API_URL = "https://crytographyproyectecdsa.onrender.com/api/v1";
 
-// VARIABLES DE ESTADO LOCAL (Seguridad en memoria RAM)
-let usuarioSesion = null;      // Datos del cliente logeado
-let llavePrivadaLocal = null;  // Almacenará el objeto CryptoKey de forma efímera
-let cotizacionesEnBandeja = []; // Lista de ofertas comerciales descargadas
+let usuarioSesion = null;
+let llavePrivadaLocal = null;
+let cotizacionesEnBandeja = [];
 let cotizacionSeleccionada = null;
 
-// --- MANEJADOR DE VISTAS (TRANSICIONES) ---
+// ─── Sistema de Modales (unificado con el dashboard) ─────────────────
+function mostrarModal({ tipo = 'info', titulo, mensaje, botones = [] }) {
+    return new Promise((resolve) => {
+        const overlay = document.getElementById('modalOverlay');
+        const iconEl = document.getElementById('modalIcon');
+        const titleEl = document.getElementById('modalTitle');
+        const msgEl = document.getElementById('modalMessage');
+        const actionsEl = document.getElementById('modalActions');
+
+        const iconMap = {
+            warning: { bg: 'warning', text: '!' },
+            danger: { bg: 'danger', text: '✕' },
+            success: { bg: 'success', text: '✓' },
+            info: { bg: 'info', text: 'i' }
+        };
+        const iconCfg = iconMap[tipo] || iconMap.info;
+        iconEl.className = `modal-icon ${iconCfg.bg}`;
+        iconEl.innerText = iconCfg.text;
+
+        titleEl.innerText = titulo || 'Notificación';
+        msgEl.innerText = mensaje || '';
+
+        actionsEl.innerHTML = '';
+        botones.forEach((btn, index) => {
+            const button = document.createElement('button');
+            button.innerText = btn.texto;
+            button.className = btn.clase || 'btn-outline';
+            button.addEventListener('click', () => {
+                cerrarModal();
+                resolve(btn.valor !== undefined ? btn.valor : index);
+            });
+            actionsEl.appendChild(button);
+        });
+
+        if (botones.length === 0) {
+            const defaultBtn = document.createElement('button');
+            defaultBtn.innerText = 'Aceptar';
+            defaultBtn.className = 'btn-primary';
+            defaultBtn.addEventListener('click', () => {
+                cerrarModal();
+                resolve(undefined);
+            });
+            actionsEl.appendChild(defaultBtn);
+        }
+
+        overlay.classList.add('active');
+        document.body.style.overflow = 'hidden';
+
+        const handleEsc = (e) => { if (e.key === 'Escape') { cerrarModal(); resolve(undefined); } };
+        document.addEventListener('keydown', handleEsc, { once: true });
+
+        function cerrarModal() {
+            overlay.classList.remove('active');
+            document.body.style.overflow = '';
+        }
+    });
+}
+
+function mostrarAlerta(mensaje, tipo = 'info', tituloPersonalizado = null) {
+    const titulos = {
+        success: 'Operación Exitosa',
+        danger: 'Error',
+        warning: 'Advertencia',
+        info: 'Información'
+    };
+    return mostrarModal({
+        tipo,
+        titulo: tituloPersonalizado || titulos[tipo] || 'Notificación',
+        mensaje,
+        botones: [{ texto: 'Aceptar', clase: 'btn-primary', valor: true }]
+    });
+}
+
+function mostrarConfirmacion(mensaje, tituloPersonalizado = null) {
+    return mostrarModal({
+        tipo: 'warning',
+        titulo: tituloPersonalizado || 'Confirmación Requerida',
+        mensaje,
+        botones: [
+            { texto: 'Cancelar', clase: 'btn-outline', valor: false },
+            { texto: 'Confirmar', clase: 'btn-danger', valor: true }
+        ]
+    });
+}
+
+// ─── Lógica de la PWA ─────────────────────────────────
 function cambiarVista(idVistaObjetivo) {
     document.querySelectorAll('.view').forEach(vista => vista.classList.add('hidden'));
     document.getElementById(idVistaObjetivo).classList.remove('hidden');
 }
 
-// --- FLUJO 1: LOGEAR USUARIO ---
+// Login
 document.getElementById('formLoginPWA').onsubmit = async (e) => {
     e.preventDefault();
     const errorDiv = document.getElementById('statusLogin');
+    errorDiv.style.display = 'block';
     errorDiv.innerText = "Validando identidad en la nube...";
+    errorDiv.className = 'status-box';
 
     try {
         const response = await fetch(`${API_URL}/usuarios/login`, {
@@ -31,62 +116,59 @@ document.getElementById('formLoginPWA').onsubmit = async (e) => {
 
         if (!response.ok) {
             const errData = await response.json();
-            errorDiv.innerText = `❌ ${errData.detail}`;
+            errorDiv.className = 'status-box error';
+            errorDiv.innerText = errData.detail;
             return;
         }
 
         const data = await response.json();
         
-        // REGLA DE ARQUITECTURA: La PWA solo permite el acceso a Clientes
         if (data.role !== "Cliente") {
-            errorDiv.innerText = "❌ Acceso denegado: Esta aplicación móvil es exclusiva para perfiles Cliente.";
+            errorDiv.className = 'status-box error';
+            errorDiv.innerText = "Acceso denegado: Esta aplicación móvil es exclusiva para perfiles Cliente.";
             return;
         }
 
-        // Guardamos los datos completos de sesión directamente
         localStorage.setItem("clienteSesion", JSON.stringify(data));
         usuarioSesion = data;
+        errorDiv.style.display = 'none';
         errorDiv.innerText = "";
         
-        // Evaluar bandeja y estado criptográfico en Render
         await verificarEstadoYConsultarBandeja();
 
     } catch (err) {
-        errorDiv.innerText = "❌ Error: El monolito central está fuera de línea.";
+        errorDiv.className = 'status-box error';
+        errorDiv.innerText = "Error: El monolito central está fuera de línea.";
     }
 };
 
-// --- FLUJO 2: INSPECCIÓN CRYPTO Y BANDEJA ---
 async function verificarEstadoYConsultarBandeja() {
     try {
         const response = await fetch(`${API_URL}/clientes/${usuarioSesion.id_cliente}/cotizaciones`);
         const data = await response.json();
         cotizacionesEnBandeja = data.cotizaciones_pendientes;
 
-        // 1. Intentamos cargar la llave privada desde el disco duro del celular (localStorage)
         llavePrivadaLocal = await cargarLlavePrivadaDelCelular();
 
-        // 2. Evaluamos el estado real del usuario
         if (data.tiene_llave_registrada === false) {
-            // Caso A: Cliente totalmente nuevo. Necesita generar llaves obligatoriamente.
             cambiarVista('view-setup-keys');
             document.getElementById('logSetup').innerText = "Llavero vacío. Se requiere aprovisionamiento inicial.";
+            document.getElementById('logSetup').className = 'status-box';
         } 
         else if (data.tiene_llave_registrada === true && llavePrivadaLocal === null) {
-            // Caso B: El backend dice que ya tiene llave, pero ESTE celular en particular NO la tiene guardada.
             cambiarVista('view-setup-keys');
-            document.getElementById('logSetup').style.color = "#ff9800";
-            document.getElementById('logSetup').innerText = "⚠️ Dispositivo no reconocido. Se requiere generar un nuevo llavero para este equipo (Re-enrolamiento).";
+            const logEl = document.getElementById('logSetup');
+            logEl.className = 'status-box warning';
+            logEl.innerText = "Dispositivo no reconocido. Se requiere generar un nuevo llavero para este equipo (Re-enrolamiento).";
         } 
         else {
-            // Caso C: El backend lo reconoce y el celular tiene la llave privada intacta en localStorage.
             if (!llavePrivadaLocal) {
                 llavePrivadaLocal = await cargarLlavePrivadaDelCelular();
             }
             cargarVistaBandejaInbox();
         }
     } catch (err) {
-        alert("Error descargando información transaccional.");
+        await mostrarAlerta("Error descargando información transaccional.", "danger");
     }
 }
 
@@ -98,7 +180,7 @@ function cargarVistaBandejaInbox() {
     contenedorLista.innerHTML = "";
 
     if (cotizacionesEnBandeja.length === 0) {
-        contenedorLista.innerHTML = `<p style="text-align:center; color:#666; font-size:14px; margin: 30px 0;">🎉 ¡Al día! No tienes cotizaciones pendientes de firma.</p>`;
+        contenedorLista.innerHTML = `<p style="text-align:center; color:var(--text-secondary); font-size:0.85rem; margin: 30px 0;">No tienes cotizaciones pendientes de firma.</p>`;
     } else {
         cotizacionesEnBandeja.forEach(cot => {
             const itemHtml = document.createElement('div');
@@ -117,9 +199,10 @@ function cargarVistaBandejaInbox() {
     cambiarVista('view-inbox');
 }
 
-// --- FLUJO 3: ENROLAMIENTO / GENERACIÓN DE LLAVES ASIMÉTRICAS ---
+// Setup de llaves
 document.getElementById('btnRegistrarLlaves').onclick = async () => {
     const logDiv = document.getElementById('logSetup');
+    logDiv.className = 'status-box';
     logDiv.innerText = "Calculando curvas elípticas en hardware local...";
 
     try {
@@ -141,19 +224,21 @@ document.getElementById('btnRegistrarLlaves').onclick = async () => {
         });
 
         if (response.ok) {
-            logDiv.innerText += "\n✅ ¡Identidad registrada con éxito! Desbloqueando aplicación...";
+            logDiv.className = 'status-box success';
+            logDiv.innerText += "\nIdentidad registrada con éxito. Desbloqueando aplicación...";
             setTimeout(() => {
                 cargarVistaBandejaInbox();
             }, 1500);
         } else {
-            logDiv.innerText += "\n❌ Error registrando llave en el servidor.";
+            logDiv.className = 'status-box error';
+            logDiv.innerText += "\nError registrando llave en el servidor.";
         }
     } catch (err) {
-        logDiv.innerText += `\n❌ Tronó el hardware crypto: ${err.message}`;
+        logDiv.className = 'status-box error';
+        logDiv.innerText += `\nFallo en hardware crypto: ${err.message}`;
     }
 };
 
-// --- FLUJO 4: BANDEJA DE DETALLES E INTERACCIÓN ---
 function verDetalleCotizacion(cot) {
     cotizacionSeleccionada = cot;
     
@@ -162,7 +247,9 @@ function verDetalleCotizacion(cot) {
     document.getElementById('detEspecificaciones').innerText = cot.detalles;
     document.getElementById('detHash').innerText = cot.hash_original;
     
-    document.getElementById('logFirma').innerText = "Esperando dictamen del cliente...";
+    const logFirma = document.getElementById('logFirma');
+    logFirma.className = 'status-box';
+    logFirma.innerText = "Esperando dictamen del cliente...";
     cambiarVista('view-details');
 }
 
@@ -171,30 +258,35 @@ function volverAlInbox() {
     cambiarVista('view-inbox');
 }
 
-// BOTÓN RECHAZAR
 document.getElementById('btnRechazar').onclick = async () => {
-    if(!confirm("¿Estás seguro de que deseas rechazar esta cotización?")) return;
+    const confirmado = await mostrarConfirmacion("¿Está seguro de que desea rechazar esta cotización?", "Rechazar Cotización");
+    if (!confirmado) return;
     
     try {
         const res = await fetch(`${API_URL}/cotizaciones/${cotizacionSeleccionada.idcotizacion}/rechazar`, { method: "POST" });
         if(res.ok) {
-            alert("Cotización rechazada.");
+            await mostrarAlerta("Cotización rechazada correctamente.", "success");
             await verificarEstadoYConsultarBandeja();
+        } else {
+            const data = await res.json();
+            await mostrarAlerta(data.detail || "Error al rechazar.", "danger");
         }
-    } catch (err) { alert("Error al procesar acción."); }
+    } catch (err) { 
+        await mostrarAlerta("Error al procesar acción.", "danger");
+    }
 };
 
-// BOTÓN FIRMAR Y ACEPTAR (Módulo Criptográfico Crítico)
 document.getElementById('btnFirmarAceptar').onclick = async () => {
     const logDiv = document.getElementById('logFirma');
     const hashContrato = document.getElementById('detHash').innerText;
     
-    logDiv.style.color = "#00ff00";
+    logDiv.className = 'status-box';
     logDiv.innerText = "Extrayendo firma digital de la llave privada local...";
 
     if (!llavePrivadaLocal) {
-        logDiv.style.color = "#f44336";
-        logDiv.innerText = "❌ ERROR DE INTEGRIDAD: La llave privada se destruyó al cerrar/refrescar la app. Por favor, cierra sesión y vuelve a enrolar tu dispositivo.";
+        logDiv.className = 'status-box error';
+        logDiv.innerText = "ERROR DE INTEGRIDAD: La llave privada se destruyó al cerrar/refrescar la app. Por favor, cierra sesión y vuelve a enrolar tu dispositivo.";
+        await mostrarAlerta("Llave privada no encontrada. Re-enrole su dispositivo.", "danger", "Error de Integridad");
         return;
     }
 
@@ -203,7 +295,6 @@ document.getElementById('btnFirmarAceptar').onclick = async () => {
         logDiv.innerText += "\n> Firma geométrica calculada con éxito.";
         logDiv.innerText += "\n> Transmitiendo paquete de validación matemática al monolito...";
 
-        console.log("Firmando este hash:", hashContrato);
         const response = await fetch(`${API_URL}/cotizaciones/${cotizacionSeleccionada.idcotizacion}/firmar`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -216,21 +307,24 @@ document.getElementById('btnFirmarAceptar').onclick = async () => {
         const data = await response.json();
         
         if (response.ok) {
-            logDiv.innerText += `\n✅ Dictamen del Servidor: ${data.mensaje}`;
-            alert("¡Contrato sellado e íntegro! Transacción autorizada.");
+            logDiv.className = 'status-box success';
+            logDiv.innerText += `\nDictamen del Servidor: ${data.mensaje}`;
+            await mostrarAlerta("¡Contrato sellado e íntegro! Transacción autorizada.", "success", "Firma Exitosa");
             await verificarEstadoYConsultarBandeja();
         } else {
-            logDiv.style.color = "#f44336";
-            logDiv.innerText += `\n❌ RECHAZADO: ${data.detail}`;
+            logDiv.className = 'status-box error';
+            logDiv.innerText += `\nRECHAZADO: ${data.detail}`;
+            await mostrarAlerta(data.detail || "Firma rechazada.", "danger");
         }
 
     } catch (err) {
-        logDiv.style.color = "#f44336";
-        logDiv.innerText += `\n❌ Fallo en red: ${err.message}`;
+        logDiv.className = 'status-box error';
+        logDiv.innerText += `\nFallo en red: ${err.message}`;
+        await mostrarAlerta("Error de conexión al firmar.", "danger");
     }
 };
 
-// --- MÓDULO DE PERSISTENCIA LOCAL (STORAGE) ---
+// Persistencia de llaves
 async function guardarLlavePrivadaEnCelular(privateKey) {
     const jwk = await window.crypto.subtle.exportKey("jwk", privateKey);
     localStorage.setItem(`llave_privada_ecdsa_${usuarioSesion.id_cliente}`, JSON.stringify(jwk));
@@ -258,27 +352,11 @@ function cerrarSesion() {
     cotizacionSeleccionada = null;
     cambiarVista('view-login');
     document.getElementById('formLoginPWA').reset();
+    document.getElementById('statusLogin').style.display = 'none';
     document.getElementById('statusLogin').innerText = "";
 }
 
-// --- RESTAURACIÓN AUTOMÁTICA COMPLETA AL INICIAR LA PWA ---
-// Usamos addEventListener para evitar colisiones con otros scripts criptográficos
-window.addEventListener("load", async () => {
-    const sesionGuardada = localStorage.getItem("clienteSesion");
-    if (sesionGuardada && sesionGuardada !== "undefined") {
-        try {
-            usuarioSesion = JSON.parse(sesionGuardada);
-            if (usuarioSesion && usuarioSesion.id_cliente) {
-                await verificarEstadoYConsultarBandeja();
-            }
-        } catch (e) {
-            console.error("Error al restaurar el llavero o sesión: ", e);
-            cerrarSesion();
-        }
-    }
-});
-
-// --- CONTROL DE INICIALIZACIÓN INMEDIATA (ELIMINA EL PARPADEO VISUAL) ---
+// Inicialización
 async function inicializarPWA() {
     const sesionGuardada = localStorage.getItem("clienteSesion");
     
@@ -286,7 +364,6 @@ async function inicializarPWA() {
         try {
             usuarioSesion = JSON.parse(sesionGuardada);
             if (usuarioSesion && usuarioSesion.id_cliente) {
-                // SI HAY SESIÓN: El login se queda oculto y brincamos directo a validar la bandeja
                 await verificarEstadoYConsultarBandeja();
                 return;
             }
@@ -295,9 +372,7 @@ async function inicializarPWA() {
         }
     }
     
-    // SI NO HAY SESIÓN: Forzamos a que se muestre el login de inmediato
     cambiarVista('view-login');
 }
 
-// Se ejecuta en caliente al cargar el archivo JS eliminando la latencia del window.load
-inicializarPWA();
+window.addEventListener("load", inicializarPWA);

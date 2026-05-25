@@ -3,57 +3,61 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cliente PWA - Sello Digital Móvil</title>
+    <title>Trustflow Móvil · Firma Digital</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
     <div class="app-container">
         <header>
-            <h2>📱 Aplicación Móvil PWA</h2>
-            <p id="txtSubtitulo">Portal seguro de autorización criptográfica</p>
+            <div class="app-logo">TF</div>
+            <h2>Trustflow Móvil</h2>
+            <p>Autorización criptográfica segura</p>
         </header>
 
+        <!-- Vista Login -->
         <div id="view-login" class="view card hidden">
             <h3>Identificación de Cliente</h3>
             <form id="formLoginPWA">
-                <label for="loginUser">Usuario Corporativo:</label>
+                <label for="loginUser">Usuario Corporativo</label>
                 <input type="text" id="loginUser" placeholder="ej. gomez_transportes" required>
                 
-                <label for="loginPass">Contraseña:</label>
+                <label for="loginPass">Contraseña</label>
                 <input type="password" id="loginPass" placeholder="••••••••" required>
                 
-                <button type="submit" class="btn btn-blue">Ingresar a la App</button>
+                <button type="submit" class="btn btn-primary">Ingresar a la App</button>
             </form>
-            <div id="statusLogin" class="error-msg"></div>
+            <div id="statusLogin" class="status-box error" style="display:none;"></div>
         </div>
 
+        <!-- Vista Setup Keys -->
         <div id="view-setup-keys" class="view card hidden">
             <div class="alert-banner warning">
-                <h4>🔑 Llavero Criptográfico Requerido</h4>
+                <h4>Llavero Criptográfico Requerido</h4>
                 <p>Detectamos que esta es una cuenta nueva o tu dispositivo no está enrolado. Debes generar tu identidad criptográfica antes de poder ver tus cotizaciones.</p>
             </div>
             <p class="info-text">Al presionar el botón, se calcularán puntos geométricos seguros sobre la curva elíptica <b>NIST P-256</b> de forma local en tu hardware móvil.</p>
-            <button id="btnRegistrarLlaves" class="btn btn-blue">Generar y Registrar Identidad</button>
-            <div class="status-box" id="logSetup">Esperando acción...</div>
+            <button id="btnRegistrarLlaves" class="btn btn-primary">Generar y Registrar Identidad</button>
+            <div id="logSetup" class="status-box">Esperando acción...</div>
         </div>
 
+        <!-- Vista Inbox -->
         <div id="view-inbox" class="view hidden">
             <div class="user-banner">
                 <p>Cliente: <b id="lblNombreCliente"></b></p>
                 <p>Expediente: <span id="lblIdCliente"></span></p>
             </div>
 
-            <h3>📥 Tus Cotizaciones Pendientes</h3>
-            <div id="listaCotizaciones" class="inbox-list">
-                </div>
+            <h3>Tus Cotizaciones Pendientes</h3>
+            <div id="listaCotizaciones" class="inbox-list"></div>
 
-            <button class="btn btn-logout" onclick="cerrarSesion()">Cerrar Sesión Segura</button>
+            <button class="btn btn-outline" onclick="cerrarSesion()">Cerrar Sesión Segura</button>
         </div>
 
+        <!-- Vista Detalles -->
         <div id="view-details" class="view card hidden">
             <button class="btn-back" onclick="volverAlInbox()">← Volver a la bandeja</button>
-            <h3 style="margin-top: 15px;">Detalles de la Oferta Comercial</h3>
+            <h3>Detalles de la Oferta Comercial</h3>
             
             <div class="details-box">
                 <p><b>ID Cotización:</b> #<span id="detId"></span></p>
@@ -65,11 +69,21 @@
             </div>
 
             <div class="action-grid">
-                <button id="btnRechazar" class="btn btn-red">✖ Rechazar</button>
-                <button id="btnFirmarAceptar" class="btn btn-green">✍ Sellar y Aceptar</button>
+                <button id="btnRechazar" class="btn btn-danger">Rechazar</button>
+                <button id="btnFirmarAceptar" class="btn btn-success">Sellar y Aceptar</button>
             </div>
             
-            <div class="status-box" id="logFirma">Sandbox listo para operación criptográfica.</div>
+            <div id="logFirma" class="status-box">Sandbox listo para operación criptográfica.</div>
+        </div>
+    </div>
+
+    <!-- Modal System -->
+    <div class="modal-overlay" id="modalOverlay">
+        <div class="modal-dialog">
+            <div class="modal-icon" id="modalIcon"></div>
+            <div class="modal-title" id="modalTitle"></div>
+            <div class="modal-message" id="modalMessage"></div>
+            <div class="modal-actions" id="modalActions"></div>
         </div>
     </div>
 
