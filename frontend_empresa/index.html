@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Intranet Corporativa &middot; Panel de Gestión</title>
+    <title>Trustflow</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
@@ -71,7 +71,7 @@
             display: flex;
             align-items: center;
             justify-content: space-between;
-            margin-bottom: 28px;
+            margin-bottom: 24px;
             flex-wrap: wrap;
             gap: 12px;
         }
@@ -199,19 +199,59 @@
             border-color: var(--warning-border);
         }
 
+        /* ── Tabs ───────────────────────────── */
+        .tabs-container {
+            display: flex;
+            gap: 4px;
+            border-bottom: 2px solid var(--border);
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+        }
+        .tab-btn {
+            padding: 10px 22px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            background: transparent;
+            border: none;
+            border-bottom: 2px solid transparent;
+            cursor: pointer;
+            transition: all var(--transition);
+            letter-spacing: 0.2px;
+            white-space: nowrap;
+            margin-bottom: -2px;
+            border-radius: 6px 6px 0 0;
+        }
+        .tab-btn:hover {
+            color: var(--text);
+            background: rgba(37, 99, 235, 0.04);
+        }
+        .tab-btn.active {
+            color: var(--primary);
+            border-bottom: 2px solid var(--primary);
+            background: rgba(37, 99, 235, 0.06);
+        }
+        .tab-panel {
+            display: none;
+            animation: fadeIn 0.2s ease;
+        }
+        .tab-panel.active {
+            display: block;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(4px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
         /* ── Grid ───────────────────────────── */
         .grid {
             display: grid;
-            grid-template-columns: 1fr 1fr;
+            grid-template-columns: 1fr;
             gap: 20px;
         }
-        @media (max-width: 720px) {
-            .grid {
-                grid-template-columns: 1fr;
-            }
-            .app-header {
-                flex-direction: column;
-                align-items: flex-start;
+        @media (min-width: 720px) {
+            .grid-2col {
+                grid-template-columns: 1fr 1fr;
             }
         }
 
@@ -340,15 +380,6 @@
             color: var(--danger);
             border-color: var(--danger-border);
         }
-        .btn-icon {
-            width: 34px;
-            height: 34px;
-            padding: 0;
-            border-radius: 50%;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-        }
 
         /* ── Status box ─────────────────────── */
         .status-box {
@@ -441,34 +472,7 @@
             word-break: break-all;
         }
 
-        /* ── Dot indicator ──────────────────── */
-        .dot {
-            display: inline-block;
-            width: 7px;
-            height: 7px;
-            border-radius: 50%;
-            margin-right: 6px;
-            flex-shrink: 0;
-        }
-        .dot-green {
-            background: #10b981;
-        }
-        .dot-red {
-            background: #ef4444;
-        }
-        .dot-amber {
-            background: #f59e0b;
-        }
-        .dot-slate {
-            background: #94a3b8;
-        }
-
         /* ── Dividers ───────────────────────── */
-        .divider {
-            border: none;
-            border-top: 1px solid var(--border);
-            margin: 18px 0;
-        }
         .section-header {
             display: flex;
             align-items: center;
@@ -487,7 +491,6 @@
             letter-spacing: -0.2px;
         }
 
-        /* ── Utility ────────────────────────── */
         .hidden {
             display: none !important;
         }
@@ -518,14 +521,8 @@
         .mb-3 {
             margin-bottom: 16px;
         }
-        .gap-2 {
-            gap: 8px;
-        }
         .flex {
             display: flex;
-        }
-        .flex-wrap {
-            flex-wrap: wrap;
         }
         .items-center {
             align-items: center;
@@ -563,7 +560,11 @@
             min-height: 20px;
         }
 
-        /* ── Responsive ─────────────────────── */
+        /* ── Sandbox card special ──────────── */
+        .sandbox-card {
+            border-top: 3px solid #475569;
+        }
+
         @media (max-width: 600px) {
             .container {
                 padding: 16px 12px 32px;
@@ -575,12 +576,9 @@
                 margin: 24px auto;
                 padding: 24px 18px;
             }
-            table {
-                font-size: 0.72rem;
-            }
-            thead th,
-            tbody td {
-                padding: 8px 6px;
+            .tab-btn {
+                padding: 8px 12px;
+                font-size: 0.78rem;
             }
         }
     </style>
@@ -618,7 +616,7 @@
                 <div class="app-brand">
                     <div class="app-logo">IC</div>
                     <div>
-                        <h1 class="app-title">Sistema Interno Corporativo</h1>
+                        <h1 class="app-title">Trustflow</h1>
                         <p class="app-subtitle">Panel Operativo de Ventas</p>
                     </div>
                 </div>
@@ -631,10 +629,16 @@
                 </div>
             </div>
 
-            <!-- Grid de formularios -->
-            <div class="grid">
-                <!-- Alta de Clientes -->
-                <div class="card mt-0">
+            <!-- Pestañas de navegación -->
+            <div class="tabs-container" id="tabNavigation">
+                <button class="tab-btn active" data-tab="tab-clientes">Clientes</button>
+                <button class="tab-btn" data-tab="tab-cotizaciones">Cotizaciones</button>
+                <button class="tab-btn" data-tab="tab-consola">Consola de Mantenimiento</button>
+            </div>
+
+            <!-- Contenido de pestañas -->
+            <div class="tab-panel active" id="tab-clientes">
+                <div class="card">
                     <div class="card-header">
                         <div>
                             <h3>Alta de Nuevos Clientes</h3>
@@ -655,9 +659,10 @@
                     </form>
                     <div class="status-box" id="statusUsuario">Estado: Esperando captura...</div>
                 </div>
+            </div>
 
-                <!-- Emitir Cotización -->
-                <div class="card mt-0">
+            <div class="tab-panel" id="tab-cotizaciones">
+                <div class="card">
                     <div class="card-header">
                         <div>
                             <h3>Emitir Nueva Cotización</h3>
@@ -683,30 +688,31 @@
                 </div>
             </div>
 
-            <!-- Consola de Mantenimiento -->
-            <div class="card" style="border-top: 3px solid #475569; margin-top: 24px;">
-                <div class="section-header">
-                    <h3>Consola de Mantenimiento y Datos (Sandbox)</h3>
-                    <button onclick="vaciarSandboxCompleto()" class="btn-outline-danger btn-sm">Vaciar Cotizaciones y Auditoría</button>
-                </div>
-                <p class="text-sm text-muted mb-3">
-                    Utilice este panel para eliminar registros corruptos o inconsistentes generados durante las pruebas, sin alterar la estructura del esquema central en Render.
-                </p>
-                <div>
-                    <h4 style="font-size:0.88rem; font-weight:600; color:#334155; margin:0 0 10px 0;">Monitoreo en Tiempo Real de Cotizaciones</h4>
-                    <div style="overflow-x:auto;">
-                        <table id="tablaAdminCotizaciones">
-                            <thead>
-                                <tr>
-                                    <th>ID</th>
-                                    <th>Cliente ID</th>
-                                    <th>Monto</th>
-                                    <th>Estado Actual</th>
-                                    <th style="text-align:center;">Acciones</th>
-                                </tr>
-                            </thead>
-                            <tbody></tbody>
-                        </table>
+            <div class="tab-panel" id="tab-consola">
+                <div class="card sandbox-card">
+                    <div class="section-header">
+                        <h3>Consola de Mantenimiento y Datos (Sandbox)</h3>
+                        <button onclick="vaciarSandboxCompleto()" class="btn-outline-danger btn-sm">Vaciar Cotizaciones y Auditoría</button>
+                    </div>
+                    <p class="text-sm text-muted mb-3">
+                        Utilice este panel para eliminar registros corruptos o inconsistentes generados durante las pruebas, sin alterar la estructura del esquema central en Render.
+                    </p>
+                    <div>
+                        <h4 style="font-size:0.88rem; font-weight:600; color:#334155; margin:0 0 10px 0;">Monitoreo en Tiempo Real de Cotizaciones</h4>
+                        <div style="overflow-x:auto;">
+                            <table id="tablaAdminCotizaciones">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Cliente ID</th>
+                                        <th>Monto</th>
+                                        <th>Estado Actual</th>
+                                        <th style="text-align:center;">Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -722,7 +728,6 @@
                 <button class="btn-logout" onclick="cerrarSesion()">Cerrar sesión</button>
             </div>
 
-            <!-- Alerta criptográfica -->
             <div class="card card-accent card-accent-danger" style="box-shadow:none; margin-bottom:20px;">
                 <h4 style="margin-top:0; color:#991b1b; font-size:0.9rem; font-weight:600;">Módulo Criptográfico de Alertas (ECDSA)</h4>
                 <p class="text-sm mb-0" style="color:#7f1d1d;">
@@ -754,6 +759,35 @@
     <script>
         const API_URL = "https://crytographyproyectecdsa.onrender.com/api/v1";
         let usuarioActual = null;
+
+        // --- Gestión de pestañas (Ventas) ---
+        function inicializarTabs() {
+            const tabButtons = document.querySelectorAll('#tabNavigation .tab-btn');
+            const tabPanels = document.querySelectorAll('.tab-panel');
+
+            tabButtons.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const target = btn.getAttribute('data-tab');
+
+                    // Actualizar botones
+                    tabButtons.forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+
+                    // Mostrar panel correspondiente
+                    tabPanels.forEach(panel => {
+                        panel.classList.remove('active');
+                        if (panel.id === target) {
+                            panel.classList.add('active');
+                        }
+                    });
+
+                    // Si se activa la consola, cargar datos automáticamente
+                    if (target === 'tab-consola') {
+                        cargarDatosConsolaAdmin();
+                    }
+                });
+            });
+        }
 
         // --- LOGIN ---
         document.getElementById('formLogin').onsubmit = async (e) => {
@@ -790,13 +824,15 @@
 
             if (usuarioActual.role === "Ventas") {
                 document.getElementById('nombreVendedor').innerText = usuarioActual.username;
-                // Actualizar avatar
                 const avatar = document.getElementById('avatarVendedor');
                 if (avatar && usuarioActual.username) {
                     avatar.innerText = usuarioActual.username.charAt(0).toUpperCase();
                 }
                 document.getElementById('vistaVentas').classList.remove('hidden');
-                cargarDatosConsolaAdmin();
+                inicializarTabs(); // Activar sistema de pestañas
+                // Por defecto la pestaña activa es Clientes, no cargamos consola hasta que se haga clic
+                document.getElementById('statusUsuario').innerText = "Estado: Esperando captura...";
+                document.getElementById('statusCotizacion').innerText = "Estado: Esperando captura...";
             } else if (usuarioActual.role === "Finanzas") {
                 document.getElementById('nombreAuditor').innerText = usuarioActual.username;
                 document.getElementById('vistaFinanzas').classList.remove('hidden');
