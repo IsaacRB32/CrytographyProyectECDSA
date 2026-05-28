@@ -254,16 +254,42 @@ def login_usuario(credenciales: LoginRequest):
         conn.close()
 
 # 5. CONSULTAR AUDITORÍA (Solo para el rol de Finanzas)
+# -------------------------------------------------------------------------
 @app.get("/api/v1/auditoria")
 def consultar_auditoria():
     conn = get_db_connection()
     try:
         with conn.cursor() as cur:
             # Traemos todo el registro de alteraciones ordenado por fecha
+            #cur.execute("""
+            #    SELECT idAuditoria, idCotizacion, accion, datos_anteriores, fecha_evento 
+            #    FROM Registro_Auditoria 
+            #    ORDER BY fecha_evento DESC
+            #""")
             cur.execute("""
-                SELECT idAuditoria, idCotizacion, accion, datos_anteriores, fecha_evento 
-                FROM Registro_Auditoria 
-                ORDER BY fecha_evento DESC
+                SELECT 
+                    ra.idAuditoria,
+                    ra.idCotizacion,
+                    ra.accion,
+                    ra.datos_anteriores,
+                    ra.fecha_evento,
+
+                    c.NombreEmpresa AS nombre_cliente,
+
+                    u.username AS nombre_vendedor
+
+                FROM Registro_Auditoria ra
+
+                JOIN Cotizacion cot
+                    ON ra.idCotizacion = cot.idCotizacion
+
+                JOIN Cliente c
+                    ON cot.idCliente = c.idCliente
+
+                JOIN Usuario u
+                    ON cot.idVendedor = u.idUser
+
+                ORDER BY ra.fecha_evento DESC
             """)
             registros = cur.fetchall()
             return {"status": "success", "data": registros}
