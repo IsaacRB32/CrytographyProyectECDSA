@@ -226,6 +226,69 @@ def firmar_cotizacion(id_cotizacion: int, payload: FirmaRequest):
     finally:
         conn.close()
 
+@app.post("/api/v1/auditoria/verificar_firmadas")
+def verificar_cotizaciones_firmadas():
+    conn = get_db_connection()
+    if not conn:
+        raise HTTPException(status_code=500, detail="Error de conexión a la base de datos")
+    
+    alertas_detectadas = 0
+    try:
+        with conn.cursor() as cur:
+            # 1. Traer todas las cotizaciones que supuestamente ya están firmadas
+            cur.execute("""
+                SELECT cot.idCotizacion, cot.monto, cot.detalles, cot.firma_digital, cot.idVendedor, c.llave_publica
+                FROM Cotizacion cot
+                JOIN Cliente c ON cot.idCliente = c.idCliente
+                WHERE cot.estado = 'Firmada'
+            """)
+            cotizaciones = cur.fetchall()
+
+            for cot in cotizaciones:
+                # 2. Recalcular el HASH con lo que HOY existe en la base de datos
+                monto_db_formateado = f"{float(cot['monto']):.2f}"
+                cadena_actual = f"{monto_db_formateado}|{cot['detalles']}"
+                hash_actual_db = hashlib.sha256(cadena_actual.encode('utf-8')).hexdigest()
+
+                # 3. Verificar la firma guardada contra el hash actual de la DB
+                # Si alguien alteró el monto en la DB, el hash cambió y la firma fallará matemáticamente
+                es_valida = verificar_firma_ecdsa(
+                    llave_publica_b64=cot['llave_publica'],
+                    hash_documento=hash_actual_db,
+                    firma_digital_b64=cot['firma_digital']
+                )
+
+                if not es_valida:
+                    # ¡ALERTA ROJA! El registro fue modificado DESPUÉS de haber sido firmado.
+                    alertas_detectadas += 1
+                    
+                    # Rompemos el estado de la cotización
+                    cur.execute(
+                        "UPDATE Cotizacion SET estado = 'Alterada' WHERE idCotizacion = %s",
+                        (cot['idcotizacion'],)
+                    )
+                    
+                    # Registramos el fraude post-firma en la auditoría
+                    cur.execute(
+                        """INSERT INTO Registro_Auditoria (idCotizacion, idUsuario, accion, datos_anteriores) 
+                           VALUES (%s, %s, 'ALTERACION_POST_FIRMA', %s)""",
+                        (
+                            cot['idcotizacion'],
+                            cot['idvendedor'],
+                            f"CRÍTICO: El documento con firma digital válida fue modificado de forma no autorizada en la base de datos de producción. El sello criptográfico original quedó roto."
+                        )
+                    )
+        conn.commit()
+        return {
+            "status": "success", 
+            "mensaje": f"Inspección finalizada. Se auditaron {len(cotizaciones)} contratos. Alertas post-firma encontradas: {alertas_detectadas}."
+        }
+    except Exception as e:
+        conn.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        conn.close()
+
 @app.post("/api/v1/usuarios/login")
 def login_usuario(credenciales: LoginRequest):
     conn = get_db_connection()

@@ -463,7 +463,12 @@
                 <div class="card">
                     <div class="section-header">
                         <h3>Alertas Activas del Sistema</h3>
-                        <button onclick="cargarAuditoria()" class="btn-secondary btn-sm">Actualizar Alertas</button>
+                        <div style="display:flex; gap:10px; align-items:center;">
+                            <button id="btnAuditoriaProfunda" onclick="ejecutarAuditoriaProfunda()" class="btn-primary btn-sm" style="background:#dc2626; border-color:#dc2626; width:auto; margin-top:0;">
+                                Ejecutar Inspección Criptográfica
+                            </button>
+                            <button onclick="cargarAuditoria()" class="btn-secondary btn-sm">Actualizar Alertas</button>
+                        </div>
                     </div>
                     <div style="overflow-x:auto;">
                         <table id="tablaAlertas">
@@ -888,43 +893,98 @@
                 console.log("Error al cargar estadísticas:", err);
             }
         }
+        // ─── NUEVO: LOGICA DE INSPECCIÓN CRIPTOGRÁFICA POST-FIRMA ───
+        async function ejecutarAuditoriaProfunda() {
+            const btnAuditoria = document.getElementById('btnAuditoriaProfunda');
+            const originalText = btnAuditoria.innerText;
+            
+            // Bloqueo defensivo del botón para evitar concurrencia en el cálculo matemático
+            btnAuditoria.innerText = "⚡ Validando Curvas Elípticas...";
+            btnAuditoria.disabled = true;
+            btnAuditoria.style.opacity = "0.7";
+
+            try {
+                // Petición al endpoint de auditoría asíncrona continua
+                const res = await fetch(`${API_URL}/auditoria/verificar_firmadas`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" }
+                });
+                
+                const data = await res.json();
+
+                if (res.ok) {
+                    // Recargamos los paneles visuales para reflejar los cambios de estado instantáneamente
+                    await cargarAuditoria();
+                    await actualizarEstadisticas();
+
+                    // Si el backend descubrió alteraciones post-firma, lanzamos un modal de peligro directo
+                    if (data.mensaje.includes("Alertas post-firma encontradas: 0")) {
+                        await mostrarAlerta(
+                            `${data.mensaje}\n\nTodos los sellos criptográficos vigentes coinciden perfectamente con el hardware local del cliente.`, 
+                            'success', 
+                            'Sistema Íntegro'
+                        );
+                    } else {
+                        await mostrarAlerta(
+                            `¡ALERTA DE SEGURIDAD DISPARADA!\n\n${data.mensaje}\n\nSe han detectado alteraciones arbitrarias en las filas de la base de datos de producción. Las firmas se han roto y los contratos fueron aislados bajo estado 'Alterada'.`, 
+                            'danger', 
+                            'Fraude Interno Detectado'
+                        );
+                    }
+                } else {
+                    await mostrarAlerta(data.detail || "Fallo inesperado al ejecutar el motor criptográfico.", 'danger', 'Error de Auditoría');
+                }
+            } catch (err) {
+                console.error("Fallo de red en módulo forense:", err);
+                await mostrarAlerta("No se pudo establecer comunicación con el Monolito de seguridad en Render.", 'danger', 'Error de Red');
+            } finally {
+                // Restauración del estado del botón
+                btnAuditoria.innerText = originalText;
+                btnAuditoria.disabled = false;
+                btnAuditoria.style.opacity = "1";
+            }
+        }
 
         async function cargarAuditoria() {
             const tbody = document.querySelector('#tablaAlertas tbody');
-            tbody.innerHTML = "<tr><td colspan='4' style='text-align:center; color:#64748b; padding:20px;'>Cargando alertas criptográficas...</td></tr>";
+            // CORRECCIÓN: Ajustado a colspan='5' para cubrir todo el grid forense
+            tbody.innerHTML = "<tr><td colspan='5' style='text-align:center; color:#64748b; padding:20px;'>Cargando alertas criptográficas...</td></tr>";
 
             try {
                 const res = await fetch(`${API_URL}/auditoria`);
                 const json = await res.json();
 
                 if (json.data.length === 0) {
-                    tbody.innerHTML = "<tr><td colspan='4' style='text-align:center; color:#64748b; padding:20px;'>No se han detectado alteraciones o fraudes en el sistema.</td></tr>";
+                    // CORRECCIÓN: Ajustado a colspan='5'
+                    tbody.innerHTML = "<tr><td colspan='5' style='text-align:center; color:#64748b; padding:20px;'>No se han detectado alteraciones o fraudes en el sistema.</td></tr>";
                     return;
                 }
 
                 tbody.innerHTML = "";
                 json.data.forEach(reg => {
                     const fecha = new Date(reg.fecha_evento).toLocaleString('es-MX');
+                    
+                    // Renderizado dinámico de la fila de auditoría
                     tbody.innerHTML += `
                     <tr>
                         <td>${fecha}</td>
                         <td><strong>#${reg.idcotizacion}</strong></td>
                         <td>
                             <span class="badge badge-neutral">
-                                ${reg.nombre_vendedor || "Desconocido"}
+                                Usuario ID: ${reg.idusuario || "Desconocido"}
                             </span>
                         </td>
                         <td><span class="badge badge-danger">${reg.accion}</span></td>
-                        <td class="mono-text">${reg.datos_anteriores}</td>
+                        <td class="mono-text" style="max-width: 300px; font-size: 0.75rem;">${reg.datos_anteriores}</td>
                     </tr>`;
                 });
                 actualizarEstadisticas();
             } catch (err) {
-                tbody.innerHTML = "<tr><td colspan='4' style='text-align:center; color:#dc2626; padding:20px;'>Error al conectar con el servicio de auditoría.</td></tr>";
-                await mostrarAlerta("No se pudo recuperar el registro de alertas. Verifique la conexión.", 'danger', 'Error de Sincronización');
+                // CORRECCIÓN: Ajustado a colspan='5'
+                tbody.innerHTML = "<tr><td colspan='5' style='text-align:center; color:#dc2626; padding:20px;'>Error al conectar con el servicio de auditoría.</td></tr>";
+                await mostrarAlerta("No se pudo recuperar el registro de alertas. Verifique la conexión con Render.", 'danger', 'Error de Sincronización');
             }
         }
-
         async function cargarHistorialCompleto() {
             const tbody = document.querySelector('#tablaHistorial tbody');
             tbody.innerHTML = "<tr><td colspan='4' style='text-align:center; color:#64748b; padding:20px;'>Cargando historial completo de transacciones...</td></tr>";
