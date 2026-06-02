@@ -435,14 +435,14 @@
                         <div class="stat-value" id="totalAlertas">0</div>
                         <div class="stat-label">Alertas Detectadas</div>
                     </div>
-                    <div class="stat-card warning">
+                    <!--<div class="stat-card warning">
                         <div class="stat-value" id="totalAlteraciones">0</div>
                         <div class="stat-label">Alteraciones</div>
                     </div>
                     <div class="stat-card danger">
                         <div class="stat-value" id="totalFraudes">0</div>
                         <div class="stat-label">Intentos de Fraude</div>
-                    </div>
+                    </div>-->
                 </div>
                 <div class="card card-accent-info">
                     <h4 style="margin-top:0; color:#3730a3; font-size:0.9rem; font-weight:600;">Estado del Sistema de Integridad</h4>
@@ -471,6 +471,7 @@
                                 <tr>
                                     <th>Fecha</th>
                                     <th>ID Cotización</th>
+                                    <th>Persona de ventas</th>
                                     <th>Alerta Detectada</th>
                                     <th>Detalles Criptográficos</th>
                                 </tr>
@@ -500,6 +501,7 @@
                                 <tr>
                                     <th>Fecha</th>
                                     <th>ID Cotización</th>
+                                    <th>Persona de ventas</th>
                                     <th>Acción</th>
                                     <th>Estado</th>
                                 </tr>
@@ -907,6 +909,11 @@
                     <tr>
                         <td>${fecha}</td>
                         <td><strong>#${reg.idcotizacion}</strong></td>
+                        <td>
+                            <span class="badge badge-neutral">
+                                ${reg.nombre_vendedor || "Desconocido"}
+                            </span>
+                        </td>
                         <td><span class="badge badge-danger">${reg.accion}</span></td>
                         <td class="mono-text">${reg.datos_anteriores}</td>
                     </tr>`;
@@ -942,6 +949,11 @@
                     <tr>
                         <td>${fecha}</td>
                         <td><strong>#${reg.idcotizacion}</strong></td>
+                        <td>
+                            <span class="badge badge-neutral">
+                                ${reg.nombre_vendedor || "Desconocido"}
+                            </span>
+                        </td>
                         <td>${reg.accion}</td>
                         <td><span class="badge ${badgeClass}">${reg.accion === 'ALTERACION' ? 'Revisado' : 'Crítico'}</span></td>
                     </tr>`;
@@ -979,6 +991,11 @@
                     <tr>
                         <td><strong>#${cot.idcotizacion}</strong></td>
                         <td>ID Client: ${cot.idcliente}</td>
+                        <td>
+                            <span class="badge badge-neutral">
+                                ${reg.nombre_vendedor || "Desconocido"}
+                            </span>
+                        </td>
                         <td><strong>$${cot.monto}</strong></td>
                         <td><span class="badge ${badgeClass}">${cot.estado}</span></td>
                         <td style="text-align:center;">
