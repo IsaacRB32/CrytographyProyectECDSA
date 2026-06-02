@@ -324,9 +324,9 @@ def obtener_historial_auditoria():
         raise HTTPException(status_code=500, detail="Error de conexión a la base de datos")
     
     try:
-        # Usamos RealDictCursor para que psycopg2 devuelva los datos como diccionarios JSON
-        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
-            # Consulta Forense con LEFT JOIN y COALESCE para protección contra borrado de usuarios
+        # Usamos el cursor estándar sin depender de importaciones 'extras'
+        with conn.cursor() as cur:
+            # Nuestra query optimizada con LEFT JOIN y protección COALESCE
             cur.execute("""
                 SELECT 
                     ra.idAuditoria,
@@ -340,19 +340,35 @@ def obtener_historial_auditoria():
                 LEFT JOIN users u ON ra.idUsuario = u.idUser
                 ORDER BY ra.fecha_evento DESC
             """)
-            registros = cur.fetchall()
             
-            # Formateamos fechas para el JSON si es necesario
-            for reg in registros:
-                if reg['fecha_evento']:
-                    reg['fecha_evento'] = reg['fecha_evento'].isoformat()
+            # Obtenemos los nombres de las columnas dinámicamente de la consulta SQL
+            columnas = [desc[0] for desc in cur.description]
+            registros_crudos = cur.fetchall()
+            
+            resultado = []
+            for fila in registros_crudos:
+                # Convertimos la fila en un Diccionario nativo de Python para evitar errores de inmutabilidad
+                # Funciona sin importar si psycopg2 devolvió una tupla o un DictRow
+                if isinstance(fila, dict) or hasattr(fila, 'keys'):
+                    reg_dict = dict(fila)
+                else:
+                    reg_dict = dict(zip(columnas, fila))
                     
-        return {"status": "success", "data": registros}
+                # Formateamos la fecha a texto ISO para que el Frontend (JSON) no sufra
+                if reg_dict.get('fecha_evento'):
+                    reg_dict['fecha_evento'] = reg_dict['fecha_evento'].isoformat()
+                
+                resultado.append(reg_dict)
+                    
+        return {"status": "success", "data": resultado}
+    
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error consultando auditoría: {str(e)}")
+        # En caso de error, lo imprimimos en la consola de Render para fácil diagnóstico
+        print(f"🔥 Error crítico en Endpoint Auditoria: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
     finally:
         conn.close()
-        
+               
 # 6. BANDEJA DE ENTRADA DEL CLIENTE (Para la PWA)
 @app.get("/api/v1/clientes/{id_cliente}/cotizaciones")
 def obtener_cotizaciones_cliente(id_cliente: int):
