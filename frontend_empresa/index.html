@@ -966,18 +966,18 @@
                     
                     // Renderizado dinámico de la fila de auditoría
                     tbody.innerHTML += `
-                    <tr>
-                        <td>${fecha}</td>
-                        <td><strong>#${reg.idcotizacion}</strong></td>
-                        <td>
-                            <span class="badge badge-neutral">
-                                Usuario ID: ${reg.idusuario || "Desconocido"}
-                            </span>
-                        </td>
-                        <td><span class="badge badge-danger">${reg.accion}</span></td>
-                        <td class="mono-text" style="max-width: 300px; font-size: 0.75rem;">${reg.datos_anteriores}</td>
-                    </tr>`;
-                });
+                        <tr>
+                            <td>${fecha}</td>
+                            <td><strong>#${reg.idcotizacion}</strong></td>
+                            <td>
+                                <span class="badge badge-neutral">
+                                    👤 ${reg.nombre_vendedor}
+                                </span>
+                            </td>
+                            <td><span class="badge badge-danger">${reg.accion}</span></td>
+                            <td class="mono-text" style="max-width: 300px; font-size: 0.75rem;">${reg.datos_anteriores}</td>
+                        </tr>`;
+                    });
                 actualizarEstadisticas();
             } catch (err) {
                 // CORRECCIÓN: Ajustado a colspan='5'
@@ -1005,13 +1005,14 @@
                     if (reg.accion === 'ALTERACION') badgeClass = 'badge-warning';
                     if (reg.accion === 'FRAUDE') badgeClass = 'badge-danger';
 
+                    // Dentro de la función cargarHistorialCompleto():
                     tbody.innerHTML += `
                     <tr>
                         <td>${fecha}</td>
                         <td><strong>#${reg.idcotizacion}</strong></td>
                         <td>
                             <span class="badge badge-neutral">
-                                ${reg.nombre_vendedor || "Desconocido"}
+                                👤 ${reg.nombre_vendedor}
                             </span>
                         </td>
                         <td>${reg.accion}</td>

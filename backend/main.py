@@ -318,21 +318,41 @@ def login_usuario(credenciales: LoginRequest):
 
 # 5. CONSULTAR AUDITORÍA (Solo para el rol de Finanzas)
 @app.get("/api/v1/auditoria")
-def consultar_auditoria():
+def obtener_historial_auditoria():
     conn = get_db_connection()
+    if not conn:
+        raise HTTPException(status_code=500, detail="Error de conexión a la base de datos")
+    
     try:
-        with conn.cursor() as cur:
-            # Traemos todo el registro de alteraciones ordenado por fecha
+        # Usamos RealDictCursor para que psycopg2 devuelva los datos como diccionarios JSON
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            # Consulta Forense con LEFT JOIN y COALESCE para protección contra borrado de usuarios
             cur.execute("""
-                SELECT idAuditoria, idCotizacion, accion, datos_anteriores, fecha_evento 
-                FROM Registro_Auditoria 
-                ORDER BY fecha_evento DESC
+                SELECT 
+                    ra.idAuditoria,
+                    ra.idCotizacion,
+                    ra.idUsuario,
+                    COALESCE(u.username, 'Usuario Eliminado/Desconocido') AS nombre_vendedor,
+                    ra.accion,
+                    ra.datos_anteriores,
+                    ra.fecha_evento
+                FROM Registro_Auditoria ra
+                LEFT JOIN users u ON ra.idUsuario = u.idUser
+                ORDER BY ra.fecha_evento DESC
             """)
             registros = cur.fetchall()
-            return {"status": "success", "data": registros}
+            
+            # Formateamos fechas para el JSON si es necesario
+            for reg in registros:
+                if reg['fecha_evento']:
+                    reg['fecha_evento'] = reg['fecha_evento'].isoformat()
+                    
+        return {"status": "success", "data": registros}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error consultando auditoría: {str(e)}")
     finally:
         conn.close()
-
+        
 # 6. BANDEJA DE ENTRADA DEL CLIENTE (Para la PWA)
 @app.get("/api/v1/clientes/{id_cliente}/cotizaciones")
 def obtener_cotizaciones_cliente(id_cliente: int):
