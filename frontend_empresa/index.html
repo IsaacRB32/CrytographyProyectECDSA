@@ -1047,15 +1047,11 @@
                     if (cot.estado === "Alterada") badgeClass = 'badge-danger';
                     if (cot.estado === "Pendiente") badgeClass = 'badge-warning';
 
+                    // CORRECCIÓN: Se eliminó la variable inexistente "reg" y se ajustaron las 5 columnas exactas
                     tbody.innerHTML += `
                     <tr>
                         <td><strong>#${cot.idcotizacion}</strong></td>
                         <td>ID Client: ${cot.idcliente}</td>
-                        <td>
-                            <span class="badge badge-neutral">
-                                ${reg.nombre_vendedor || "Desconocido"}
-                            </span>
-                        </td>
                         <td><strong>$${cot.monto}</strong></td>
                         <td><span class="badge ${badgeClass}">${cot.estado}</span></td>
                         <td style="text-align:center;">
@@ -1064,6 +1060,7 @@
                     </tr>`;
                 });
             } catch (err) {
+                console.error("Fallo renderizando consola:", err);
                 tbody.innerHTML = "<tr><td colspan='5' style='text-align:center; color:#dc2626; padding:20px;'>Error al mapear la consola de mantenimiento.</td></tr>";
                 await mostrarAlerta("No se pudo cargar la consola de administración. Intente nuevamente.", 'danger', 'Error de Carga');
             }
