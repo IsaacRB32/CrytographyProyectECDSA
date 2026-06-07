@@ -232,7 +232,7 @@ document.getElementById('btnRegistrarLlaves').onclick = async () => {
         });
 
         if (response.ok) {
-            await mostrarAlerta("¡Contrato sellado e íntegro! Transacción autorizada.", "success", "Firma Exitosa");
+            await mostrarAlerta("Firma creada exitosamente. Tu identidad criptográfica ha sido registrada en el sistema.", "success", "Firma Creada Exitosamente");
             await verificarEstadoYConsultarBandeja();
         } else {
             // 1. Se muestra tu mensaje discreto y profesional
@@ -323,7 +323,7 @@ document.getElementById('btnFirmarAceptar').onclick = async () => {
         const data = await response.json();
         
         if (response.ok) {
-            await mostrarAlerta("¡Contrato sellado e íntegro! Transacción autorizada.", "success", "Firma Exitosa");
+            await mostrarAlerta("Firmado exitosamente.", "success", "Firma Exitosa");
             volverAlInbox();
             await verificarEstadoYConsultarBandeja();
         } else {
