@@ -34,6 +34,10 @@
             --info: #4f46e5;
             --info-bg: #eef2ff;
             --info-border: #c7d2fe;
+            --teal: #0d9488;
+            --teal-hover: #0f766e;
+            --teal-light: #f0fdfa;
+            --teal-border: #99f6e4;
             --radius-sm: 6px;
             --radius: 8px;
             --radius-lg: 12px;
@@ -50,12 +54,9 @@
 
         body {
             font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
-            margin: 0;
-            padding: 0;
-            background-color: var(--bg);
-            color: var(--text);
-            line-height: 1.6;
-            -webkit-font-smoothing: antialiased;
+            margin: 0; padding: 0;
+            background-color: var(--bg); color: var(--text);
+            line-height: 1.6; -webkit-font-smoothing: antialiased;
         }
 
         .container { max-width: 1060px; margin: 0 auto; padding: 32px 24px 48px; }
@@ -124,6 +125,7 @@
 
         /* ── Forms ──────────────────────────── */
         .form-group { margin-bottom: 14px; }
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
         label { display: block; margin-bottom: 5px; font-weight: 600; font-size: 0.8rem; color: var(--text); letter-spacing: 0.2px; text-transform: uppercase; }
         input, select, textarea {
             width: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: var(--radius);
@@ -148,6 +150,8 @@
         .btn-danger:hover { background: var(--danger-hover); border-color: var(--danger-hover); box-shadow: var(--shadow-sm); }
         .btn-outline-danger { background: transparent; color: var(--danger); border-color: var(--danger-border); }
         .btn-outline-danger:hover { background: var(--danger-bg); border-color: var(--danger); }
+        .btn-teal { background: var(--teal); color: #fff; border-color: var(--teal); width: 100%; margin-top: 6px; padding: 11px 20px; }
+        .btn-teal:hover { background: var(--teal-hover); border-color: var(--teal-hover); box-shadow: var(--shadow-sm); }
         .btn-sm { padding: 6px 12px; font-size: 0.75rem; border-radius: var(--radius-sm); }
         .btn-xs { padding: 4px 10px; font-size: 0.7rem; border-radius: 20px; font-weight: 600; letter-spacing: 0.3px; text-transform: uppercase; }
         .btn-logout {
@@ -155,6 +159,8 @@
             padding: 8px 16px; font-weight: 500; font-size: 0.8rem; border-radius: 30px; cursor: pointer;
         }
         .btn-logout:hover { background: #fef2f2; color: var(--danger); border-color: var(--danger-border); }
+        .btn-warning-outline { background: transparent; color: var(--warning); border-color: var(--warning-border); }
+        .btn-warning-outline:hover { background: var(--warning-bg); border-color: var(--warning); }
 
         /* ── Tables ─────────────────────────── */
         table { width: 100%; border-collapse: collapse; font-size: 0.84rem; }
@@ -171,6 +177,8 @@
         .badge-danger { background: #fee2e2; color: #991b1b; }
         .badge-warning { background: #fef3c7; color: #92400e; }
         .badge-neutral { background: #f1f5f9; color: #475569; }
+        .badge-info { background: #e0e7ff; color: #3730a3; }
+        .badge-teal { background: #ccfbf1; color: #134e4a; }
         .mono-text { font-family: 'SF Mono', 'Cascadia Code', 'Fira Code', 'Consolas', monospace; font-size: 0.72rem; color: var(--text-secondary); word-break: break-all; }
 
         .section-header {
@@ -241,14 +249,6 @@
         .modal-actions { display: flex; gap: 10px; justify-content: flex-end; }
         .modal-actions button { min-width: 100px; }
 
-        @media (max-width: 600px) {
-            .container { padding: 16px 12px 32px; }
-            .card { padding: 18px 14px; }
-            .login-card { margin: 24px auto; padding: 24px 18px; }
-            .tab-btn { padding: 8px 12px; font-size: 0.78rem; }
-            .modal-dialog { padding: 22px 18px 18px; }
-            .stats-grid { grid-template-columns: 1fr; }
-        }
         /* ── Autocompletado de Clientes ────────── */
         .custom-dropdown {
             position: absolute; top: 100%; left: 0; right: 0;
@@ -268,10 +268,75 @@
             font-size: 0.7rem; background: var(--border); padding: 2px 6px;
             border-radius: 12px; color: var(--text-secondary);
         }
+
+        /* ── Trip Cards Grid ────────────────── */
+        .trip-cards-grid {
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+            gap: 14px; margin-bottom: 20px;
+        }
+        .trip-card {
+            background: var(--surface); border: 2px solid var(--border);
+            border-radius: var(--radius-lg); padding: 18px 16px;
+            cursor: pointer; transition: all var(--transition);
+            position: relative; overflow: hidden;
+        }
+        .trip-card:hover { border-color: var(--primary-border); box-shadow: var(--shadow); transform: translateY(-2px); }
+        .trip-card.selected { border-color: var(--teal); background: var(--teal-light); box-shadow: 0 0 0 3px rgba(13,148,136,0.15); }
+        .trip-card.custom-card { border-style: dashed; }
+        .trip-card.custom-card.selected { border-style: solid; }
+        .trip-card-icon {
+            width: 36px; height: 36px; border-radius: var(--radius);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.1rem; margin-bottom: 10px; flex-shrink: 0;
+        }
+        .trip-card-icon.sunrise { background: #fef3c7; }
+        .trip-card-icon.pyramid { background: #e0e7ff; }
+        .trip-card-icon.forest { background: #d1fae5; }
+        .trip-card-icon.beach { background: #cffafe; }
+        .trip-card-icon.mountain { background: #fce7f3; }
+        .trip-card-icon.custom { background: #f1f5f9; }
+        .trip-card-name { font-weight: 700; font-size: 0.88rem; color: #0f172a; margin-bottom: 8px; letter-spacing: -0.2px; }
+        .trip-card-detail { font-size: 0.72rem; color: var(--text-secondary); display: flex; align-items: center; gap: 5px; margin-bottom: 3px; }
+        .trip-card-detail span.label-icon { width: 14px; text-align: center; flex-shrink: 0; }
+        .trip-card-price {
+            margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border-light);
+            font-weight: 700; font-size: 1rem; color: var(--teal);
+        }
+        .trip-card .check-indicator {
+            position: absolute; top: 10px; right: 10px; width: 22px; height: 22px;
+            border-radius: 50%; border: 2px solid var(--border); background: var(--surface);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 0.7rem; color: transparent; transition: all var(--transition);
+        }
+        .trip-card.selected .check-indicator { background: var(--teal); border-color: var(--teal); color: #fff; }
+
+        .custom-fields { margin-top: 14px; padding-top: 14px; border-top: 1px dashed var(--border); }
+
+        /* ── Sub-tabs inside a panel ────────── */
+        .sub-tabs { display: flex; gap: 6px; margin-bottom: 18px; }
+        .sub-tab-btn {
+            padding: 7px 16px; font-size: 0.78rem; font-weight: 600; color: var(--text-secondary);
+            background: var(--surface-alt); border: 1px solid var(--border); border-radius: 20px;
+            cursor: pointer; transition: all var(--transition);
+        }
+        .sub-tab-btn:hover { color: var(--text); border-color: #cbd5e1; }
+        .sub-tab-btn.active { color: var(--primary); background: var(--primary-light); border-color: var(--primary-border); }
+        .sub-panel { display: none; animation: fadeIn 0.2s ease; }
+        .sub-panel.active { display: block; }
+
+        @media (max-width: 600px) {
+            .container { padding: 16px 12px 32px; }
+            .card { padding: 18px 14px; }
+            .login-card { margin: 24px auto; padding: 24px 18px; }
+            .tab-btn { padding: 8px 12px; font-size: 0.78rem; }
+            .modal-dialog { padding: 22px 18px 18px; }
+            .stats-grid { grid-template-columns: 1fr; }
+            .form-row { grid-template-columns: 1fr; }
+            .trip-cards-grid { grid-template-columns: 1fr; }
+        }
     </style>
 </head>
 <body>
-
     <div class="container">
         <!-- ── Vista de Login ───────────────── -->
         <div id="vistaLogin">
@@ -316,62 +381,176 @@
             </div>
 
             <div class="tabs-container" id="tabNavigationVentas">
-                <button class="tab-btn active" data-tab="tab-clientes">Clientes</button>
+                <button class="tab-btn active" data-tab="tab-clientes">Usuarios</button>
                 <button class="tab-btn" data-tab="tab-cotizaciones">Cotizaciones</button>
                 <button class="tab-btn" data-tab="tab-consola">Consola de Mantenimiento</button>
             </div>
 
+            <!-- ═══ TAB: USUARIOS (Antes "Clientes") ═══ -->
             <div class="tab-panel active" id="tab-clientes">
-                <div class="card">
-                    <div class="card-header">
-                        <div>
-                            <h3>Alta de Nuevos Clientes</h3>
-                            <p class="card-meta">Registre al cliente para que pueda usar la PWA.</p>
+                <div class="sub-tabs">
+                    <button class="sub-tab-btn active" onclick="cambiarSubTab(this, 'sub-alta')">Registrar Usuario</button>
+                    <button class="sub-tab-btn" onclick="cambiarSubTab(this, 'sub-directorio')">Directorio de Usuarios</button>
+                </div>
+
+                <!-- Sub-panel: Alta -->
+                <div class="sub-panel active" id="sub-alta">
+                    <div class="card">
+                        <div class="card-header">
+                            <div>
+                                <h3>Registrar Nuevo Usuario</h3>
+                                <p class="card-meta">Cree cuentas de cliente, agentes de ventas o auditores financieros.</p>
+                            </div>
+                        </div>
+                        <form id="formUsuario">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="userUsername">Nombre / Empresa</label>
+                                    <input type="text" id="userUsername" placeholder="Ej. Acme Corp" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="userRole">Rol del Usuario</label>
+                                    <select id="userRole">
+                                        <option value="Cliente" selected>Cliente</option>
+                                        <option value="Ventas">Ventas</option>
+                                        <option value="Finanzas">Finanzas</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="userPassword">Contraseña</label>
+                                <input type="password" id="userPassword" value="123" required>
+                            </div>
+                            <button type="submit" class="btn-primary">Crear Cuenta</button>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Sub-panel: Directorio CRUD -->
+                <div class="sub-panel" id="sub-directorio">
+                    <div class="card">
+                        <div class="section-header">
+                            <h3>Directorio de Usuarios del Sistema</h3>
+                            <button onclick="cargarDirectorioUsuarios()" class="btn-secondary btn-sm">Actualizar</button>
+                        </div>
+                        <div style="overflow-x:auto;">
+                            <table id="tablaUsuarios">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Nombre</th>
+                                        <th>Rol</th>
+                                        <th style="text-align:center;">Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr><td colspan="4" class="text-center text-muted" style="padding:20px;">Seleccione "Actualizar" para cargar los usuarios.</td></tr>
+                                </tbody>
+                            </table>
                         </div>
                     </div>
-                    <form id="formUsuario">
-                        <div class="form-group">
-                            <label for="userUsername">Nombre del Cliente / Empresa</label>
-                            <input type="text" id="userUsername" placeholder="Ej. Acme Corp" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="userPassword">Contraseña Temporal</label>
-                            <input type="password" id="userPassword" value="123" required>
-                        </div>
-                        <input type="hidden" id="userRole" value="Cliente">
-                        <button type="submit" class="btn-primary">Crear Cuenta de Cliente</button>
-                    </form>
                 </div>
             </div>
 
+            <!-- ═══ TAB: COTIZACIONES ═══ -->
             <div class="tab-panel" id="tab-cotizaciones">
                 <div class="card">
                     <div class="card-header">
                         <div>
                             <h3>Emitir Nueva Cotización</h3>
-                            <p class="card-meta">Genere un documento de cotización para el cliente.</p>
+                            <p class="card-meta">Seleccione un viaje predefinido o configure uno personalizado.</p>
                         </div>
                     </div>
-                    <form id="formCotizacion">
-                        <div class="form-group" style="position: relative;">
-                            <label for="cotBuscadorCliente">Cliente Destino</label>
-                            <input type="text" id="cotBuscadorCliente" placeholder="Buscar por nombre de empresa o ID..." autocomplete="off" required>
-                            <input type="hidden" id="cotIdCliente" required>
-                            <ul id="dropdownClientes" class="custom-dropdown hidden"></ul>
+
+                    <!-- Buscador de cliente -->
+                    <div class="form-group" style="position: relative; margin-bottom: 20px;">
+                        <label for="cotBuscadorCliente">Cliente Destino</label>
+                        <input type="text" id="cotBuscadorCliente" placeholder="Buscar por nombre de empresa o ID..." autocomplete="off" required>
+                        <input type="hidden" id="cotIdCliente" required>
+                        <ul id="dropdownClientes" class="custom-dropdown hidden"></ul>
+                    </div>
+
+                    <!-- Tarjetas de Viajes -->
+                    <label style="margin-bottom:10px;">Seleccionar Viaje</label>
+                    <div class="trip-cards-grid" id="tripCardsGrid">
+                        <!-- Card 1 -->
+                        <div class="trip-card" onclick="seleccionarViaje(this, 0)">
+                            <div class="check-indicator">✓</div>
+                            <div class="trip-card-icon sunrise">🌅</div>
+                            <div class="trip-card-name">Amanecer Teotihuacán – CDMX</div>
+                            <div class="trip-card-detail"><span class="label-icon">📍</span> Salida: Bellas Artes · 4:00 AM</div>
+                            <div class="trip-card-detail"><span class="label-icon">🏛️</span> Llegada: Teotihuacán · 5:00 AM</div>
+                            <div class="trip-card-detail"><span class="label-icon">🔄</span> Regreso: Bellas Artes · 12:00 PM</div>
+                            <div class="trip-card-price">$9,000.00 MXN</div>
                         </div>
-                        <div class="form-group">
-                            <label for="cotMonto">Monto de la Transacción (MXN)</label>
-                            <input type="number" id="cotMonto" step="0.01" placeholder="0.00" required>
+                        <!-- Card 2 -->
+                        <div class="trip-card" onclick="seleccionarViaje(this, 1)">
+                            <div class="check-indicator">✓</div>
+                            <div class="trip-card-icon pyramid">🏛️</div>
+                            <div class="trip-card-name">Ruta Colonial Puebla – Cholula</div>
+                            <div class="trip-card-detail"><span class="label-icon">📍</span> Salida: Terminal TAPO · 7:00 AM</div>
+                            <div class="trip-card-detail"><span class="label-icon">⛪</span> Llegada: Centro Histórico Puebla · 9:30 AM</div>
+                            <div class="trip-card-detail"><span class="label-icon">🔄</span> Regreso: Terminal TAPO · 7:00 PM</div>
+                            <div class="trip-card-price">$12,500.00 MXN</div>
                         </div>
-                        <div class="form-group">
-                            <label for="cotDetalles">Detalles del Servicio</label>
-                            <textarea id="cotDetalles" rows="3" placeholder="Describa el alcance del servicio..." required></textarea>
+                        <!-- Card 3 -->
+                        <div class="trip-card" onclick="seleccionarViaje(this, 2)">
+                            <div class="check-indicator">✓</div>
+                            <div class="trip-card-icon forest">🌲</div>
+                            <div class="trip-card-name">Bosques de Toluca – Nevado</div>
+                            <div class="trip-card-detail"><span class="label-icon">📍</span> Salida: Observatorio · 5:30 AM</div>
+                            <div class="trip-card-detail"><span class="label-icon">🏔️</span> Llegada: Nevado de Toluca · 8:00 AM</div>
+                            <div class="trip-card-detail"><span class="label-icon">🔄</span> Regreso: Observatorio · 4:00 PM</div>
+                            <div class="trip-card-price">$11,000.00 MXN</div>
                         </div>
-                        <button type="submit" class="btn-primary" style="background:#0d9488; border-color:#0d9488;">Enviar a Pre-Firma</button>
+                        <!-- Card 4 -->
+                        <div class="trip-card" onclick="seleccionarViaje(this, 3)">
+                            <div class="check-indicator">✓</div>
+                            <div class="trip-card-icon beach">🏖️</div>
+                            <div class="trip-card-name">Escape a Taxco – Grutas de Cacahuamilpa</div>
+                            <div class="trip-card-detail"><span class="label-icon">📍</span> Salida: Tasqueña · 6:00 AM</div>
+                            <div class="trip-card-detail"><span class="label-icon">💎</span> Llegada: Taxco Centro · 9:30 AM</div>
+                            <div class="trip-card-detail"><span class="label-icon">🔄</span> Regreso: Tasqueña · 8:00 PM</div>
+                            <div class="trip-card-price">$14,000.00 MXN</div>
+                        </div>
+                        <!-- Card 5 -->
+                        <div class="trip-card" onclick="seleccionarViaje(this, 4)">
+                            <div class="check-indicator">✓</div>
+                            <div class="trip-card-icon mountain">🦋</div>
+                            <div class="trip-card-name">Santuario Mariposa Monarca – Michoacán</div>
+                            <div class="trip-card-detail"><span class="label-icon">📍</span> Salida: Poniente 152 · 5:00 AM</div>
+                            <div class="trip-card-detail"><span class="label-icon">🌿</span> Llegada: Santuario El Rosario · 9:00 AM</div>
+                            <div class="trip-card-detail"><span class="label-icon">🔄</span> Regreso: Poniente 152 · 6:30 PM</div>
+                            <div class="trip-card-price">$15,500.00 MXN</div>
+                        </div>
+                        <!-- Card 6: Personalizado -->
+                        <div class="trip-card custom-card" onclick="seleccionarViaje(this, 5)">
+                            <div class="check-indicator">✓</div>
+                            <div class="trip-card-icon custom">✏️</div>
+                            <div class="trip-card-name">Viaje Personalizado</div>
+                            <p style="font-size:0.75rem; color:var(--text-muted); margin:0;">Ingrese los datos del viaje de forma manual.</p>
+                            <div class="custom-fields hidden" id="camposPersonalizados">
+                                <div class="form-group">
+                                    <label for="customDetalles">Descripción del viaje</label>
+                                    <textarea id="customDetalles" rows="3" placeholder="Origen, destino, horarios y detalles..."></textarea>
+                                </div>
+                                <div class="form-group">
+                                    <label for="customMonto">Costo del viaje (MXN)</label>
+                                    <input type="number" id="customMonto" step="0.01" placeholder="0.00">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <form id="formCotizacion" style="margin-top:4px;">
+                        <input type="hidden" id="cotMonto">
+                        <input type="hidden" id="cotDetalles">
+                        <button type="submit" class="btn-teal">Enviar a Pre-Firma</button>
                     </form>
                 </div>
             </div>
 
+            <!-- ═══ TAB: CONSOLA ═══ -->
             <div class="tab-panel" id="tab-consola">
                 <div class="card sandbox-card">
                     <div class="section-header">
@@ -421,28 +600,18 @@
                 </div>
             </div>
 
-            <!-- Pestañas de navegación para Finanzas -->
             <div class="tabs-container" id="tabNavigationFinanzas">
                 <button class="tab-btn active" data-tab="tab-resumen">Resumen</button>
                 <button class="tab-btn" data-tab="tab-alertas">Alertas Criptográficas</button>
                 <button class="tab-btn" data-tab="tab-historial">Historial de Integridad</button>
             </div>
 
-            <!-- Panel de Resumen -->
             <div class="tab-panel active" id="tab-resumen">
                 <div class="stats-grid">
                     <div class="stat-card">
                         <div class="stat-value" id="totalAlertas">0</div>
                         <div class="stat-label">Alertas Detectadas</div>
                     </div>
-                    <!--<div class="stat-card warning">
-                        <div class="stat-value" id="totalAlteraciones">0</div>
-                        <div class="stat-label">Alteraciones</div>
-                    </div>
-                    <div class="stat-card danger">
-                        <div class="stat-value" id="totalFraudes">0</div>
-                        <div class="stat-label">Intentos de Fraude</div>
-                    </div>-->
                 </div>
                 <div class="card card-accent-info">
                     <h4 style="margin-top:0; color:#3730a3; font-size:0.9rem; font-weight:600;">Estado del Sistema de Integridad</h4>
@@ -452,7 +621,6 @@
                 </div>
             </div>
 
-            <!-- Panel de Alertas Criptográficas -->
             <div class="tab-panel" id="tab-alertas">
                 <div class="card card-accent-danger">
                     <h4 style="margin-top:0; color:#991b1b; font-size:0.9rem; font-weight:600;">Módulo Criptográfico de Alertas (ECDSA)</h4>
@@ -487,7 +655,6 @@
                 </div>
             </div>
 
-            <!-- Panel de Historial de Integridad -->
             <div class="tab-panel" id="tab-historial">
                 <div class="card">
                     <div class="section-header">
@@ -528,43 +695,75 @@
             <div class="modal-actions" id="modalActions"></div>
         </div>
     </div>
-
     <script>
         const API_URL = "https://crytographyproyectecdsa.onrender.com/api/v1";
         let usuarioActual = null;
-
         let listaClientesGlobal = [];
+        let viajeSeleccionadoIdx = null;
 
-        // Descarga el catálogo de clientes en segundo plano
+        // ── Catálogo de viajes predefinidos ──────
+        const VIAJES_PREDEFINIDOS = [
+            { nombre: "Amanecer Teotihuacán – CDMX", monto: 9000.00, detalles: "Salida: Bellas Artes 4:00 AM | Llegada: Teotihuacán 5:00 AM | Regreso: Bellas Artes 12:00 PM | Renta de autobús completa." },
+            { nombre: "Ruta Colonial Puebla – Cholula", monto: 12500.00, detalles: "Salida: Terminal TAPO 7:00 AM | Llegada: Centro Histórico Puebla 9:30 AM | Regreso: Terminal TAPO 7:00 PM | Incluye parada en Cholula." },
+            { nombre: "Bosques de Toluca – Nevado", monto: 11000.00, detalles: "Salida: Observatorio 5:30 AM | Llegada: Nevado de Toluca 8:00 AM | Regreso: Observatorio 4:00 PM | Ruta escénica completa." },
+            { nombre: "Escape a Taxco – Grutas de Cacahuamilpa", monto: 14000.00, detalles: "Salida: Tasqueña 6:00 AM | Llegada: Taxco Centro 9:30 AM | Regreso: Tasqueña 8:00 PM | Visita a grutas incluida." },
+            { nombre: "Santuario Mariposa Monarca – Michoacán", monto: 15500.00, detalles: "Salida: Poniente 152 5:00 AM | Llegada: Santuario El Rosario 9:00 AM | Regreso: Poniente 152 6:30 PM | Temporada Nov-Mar." },
+            null // Personalizado
+        ];
+
+        // ── Trip card selection ──────────────────
+        function seleccionarViaje(cardEl, idx) {
+            // Deselect all
+            document.querySelectorAll('.trip-card').forEach(c => c.classList.remove('selected'));
+            cardEl.classList.add('selected');
+            viajeSeleccionadoIdx = idx;
+
+            const camposCustom = document.getElementById('camposPersonalizados');
+
+            if (idx === 5) {
+                // Personalizado
+                camposCustom.classList.remove('hidden');
+                document.getElementById('cotMonto').value = '';
+                document.getElementById('cotDetalles').value = '';
+            } else {
+                camposCustom.classList.add('hidden');
+                const viaje = VIAJES_PREDEFINIDOS[idx];
+                document.getElementById('cotMonto').value = viaje.monto;
+                document.getElementById('cotDetalles').value = viaje.detalles;
+            }
+        }
+
+        // ── Sub-tabs ─────────────────────────────
+        function cambiarSubTab(btn, targetId) {
+            const parent = btn.closest('.tab-panel');
+            parent.querySelectorAll('.sub-tab-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            parent.querySelectorAll('.sub-panel').forEach(p => p.classList.remove('active'));
+            document.getElementById(targetId).classList.add('active');
+
+            if (targetId === 'sub-directorio') cargarDirectorioUsuarios();
+        }
+
+        // ── Buscador de clientes ─────────────────
         async function cargarClientesParaBuscador() {
             try {
                 const res = await fetch(`${API_URL}/admin/tablas_resumen`);
                 const json = await res.json();
-                if (json.clientes) {
-                    listaClientesGlobal = json.clientes;
-                }
-            } catch (err) {
-                console.error("Error cargando el catálogo de clientes:", err);
-            }
+                if (json.clientes) listaClientesGlobal = json.clientes;
+            } catch (err) { console.error("Error cargando catálogo de clientes:", err); }
         }
 
-        // Lógica reactiva del input
         const buscadorInput = document.getElementById('cotBuscadorCliente');
         const inputOcultoId = document.getElementById('cotIdCliente');
         const dropdownList = document.getElementById('dropdownClientes');
 
-        if(buscadorInput && dropdownList) {
+        if (buscadorInput && dropdownList) {
             buscadorInput.addEventListener('input', () => {
                 const texto = buscadorInput.value.toLowerCase().trim();
-                inputOcultoId.value = ""; // Resetea el ID oculto si el usuario borra o edita a mano
-
+                inputOcultoId.value = "";
                 dropdownList.innerHTML = "";
-                if (!texto) {
-                    dropdownList.classList.add('hidden');
-                    return;
-                }
+                if (!texto) { dropdownList.classList.add('hidden'); return; }
 
-                // Filtrar por nombre o por ID numérico
                 const filtrados = listaClientesGlobal.filter(c => {
                     const nombre = (c.nombreempresa || c.NombreEmpresa || "").toLowerCase();
                     const idStr = (c.idcliente || c.idCliente || "").toString();
@@ -576,15 +775,8 @@
                 } else {
                     filtrados.forEach(c => {
                         const li = document.createElement('li');
-
-                        // 1. Capturamos el nombre de la base de datos de manera segura
-                        let nombreEmpresa = c.nombreempresa || c.NombreEmpresa || "";
-
-                        // 2. 🔥 REEMPLAZO ULTRA-SEGURO POR REGEX: Quita "Empresa de " sin importar mayúsculas/minúsculas o espacios extra
-                        nombreEmpresa = nombreEmpresa.replace(/^empresa de\s+/i, "");
-
+                        let nombreEmpresa = (c.nombreempresa || c.NombreEmpresa || "").replace(/^empresa de\s+/i, "");
                         const idC = c.idcliente || c.idCliente;
-
                         li.innerHTML = `<strong>${nombreEmpresa}</strong> <span class="client-id-badge">ID: ${idC}</span>`;
                         li.onclick = () => {
                             buscadorInput.value = nombreEmpresa;
@@ -596,19 +788,11 @@
                 }
                 dropdownList.classList.remove('hidden');
             });
-
-            // Ocultar dropdown al hacer click fuera (con un ligero retraso para permitir registrar el evento click del item)
-            buscadorInput.addEventListener('blur', () => {
-                setTimeout(() => dropdownList.classList.add('hidden'), 200);
-            });
-            
-            // Volver a mostrar si se hace click en el input y ya hay un texto escrito
-            buscadorInput.addEventListener('focus', () => {
-                if (buscadorInput.value) buscadorInput.dispatchEvent(new Event('input'));
-            });
+            buscadorInput.addEventListener('blur', () => { setTimeout(() => dropdownList.classList.add('hidden'), 200); });
+            buscadorInput.addEventListener('focus', () => { if (buscadorInput.value) buscadorInput.dispatchEvent(new Event('input')); });
         }
 
-        // ─── Sistema de Modales ─────────────────
+        // ── Sistema de Modales ───────────────────
         function mostrarModal({ tipo = 'info', titulo, mensaje, botones = [] }) {
             return new Promise((resolve) => {
                 const overlay = document.getElementById('modalOverlay');
@@ -617,16 +801,10 @@
                 const msgEl = document.getElementById('modalMessage');
                 const actionsEl = document.getElementById('modalActions');
 
-                const iconMap = {
-                    warning: { bg: 'warning', text: '!' },
-                    danger: { bg: 'danger', text: '✕' },
-                    success: { bg: 'success', text: '✓' },
-                    info: { bg: 'info', text: 'i' }
-                };
+                const iconMap = { warning: { bg: 'warning', text: '!' }, danger: { bg: 'danger', text: '✕' }, success: { bg: 'success', text: '✓' }, info: { bg: 'info', text: 'i' } };
                 const iconCfg = iconMap[tipo] || iconMap.info;
                 iconEl.className = `modal-icon ${iconCfg.bg}`;
                 iconEl.innerText = iconCfg.text;
-
                 titleEl.innerText = titulo || 'Notificación';
                 msgEl.innerText = mensaje || '';
 
@@ -635,10 +813,7 @@
                     const button = document.createElement('button');
                     button.innerText = btn.texto;
                     button.className = btn.clase || 'btn-secondary';
-                    button.addEventListener('click', () => {
-                        cerrarModal();
-                        resolve(btn.valor !== undefined ? btn.valor : index);
-                    });
+                    button.addEventListener('click', () => { cerrarModal(); resolve(btn.valor !== undefined ? btn.valor : index); });
                     actionsEl.appendChild(button);
                 });
 
@@ -646,102 +821,61 @@
                     const defaultBtn = document.createElement('button');
                     defaultBtn.innerText = 'Aceptar';
                     defaultBtn.className = 'btn-primary';
-                    defaultBtn.addEventListener('click', () => {
-                        cerrarModal();
-                        resolve(undefined);
-                    });
+                    defaultBtn.addEventListener('click', () => { cerrarModal(); resolve(undefined); });
                     actionsEl.appendChild(defaultBtn);
                 }
 
                 overlay.classList.add('active');
                 document.body.style.overflow = 'hidden';
-
                 const handleEsc = (e) => { if (e.key === 'Escape') { cerrarModal(); resolve(undefined); } };
                 document.addEventListener('keydown', handleEsc, { once: true });
 
-                function cerrarModal() {
-                    overlay.classList.remove('active');
-                    document.body.style.overflow = '';
-                }
+                function cerrarModal() { overlay.classList.remove('active'); document.body.style.overflow = ''; }
             });
         }
 
         function mostrarAlerta(mensaje, tipo = 'info', tituloPersonalizado = null) {
-            const titulosPorDefecto = {
-                success: 'Operación Exitosa',
-                danger: 'Error',
-                warning: 'Advertencia',
-                info: 'Información'
-            };
-            return mostrarModal({
-                tipo,
-                titulo: tituloPersonalizado || titulosPorDefecto[tipo] || 'Notificación',
-                mensaje,
-                botones: [{ texto: 'Aceptar', clase: 'btn-primary', valor: true }]
-            });
+            const titulos = { success: 'Operación Exitosa', danger: 'Error', warning: 'Advertencia', info: 'Información' };
+            return mostrarModal({ tipo, titulo: tituloPersonalizado || titulos[tipo] || 'Notificación', mensaje, botones: [{ texto: 'Aceptar', clase: 'btn-primary', valor: true }] });
         }
 
         function mostrarConfirmacion(mensaje, tituloPersonalizado = null) {
-            return mostrarModal({
-                tipo: 'warning',
-                titulo: tituloPersonalizado || 'Confirmación Requerida',
-                mensaje,
-                botones: [
-                    { texto: 'Cancelar', clase: 'btn-secondary', valor: false },
-                    { texto: 'Confirmar', clase: 'btn-danger', valor: true }
-                ]
-            });
+            return mostrarModal({ tipo: 'warning', titulo: tituloPersonalizado || 'Confirmación Requerida', mensaje, botones: [{ texto: 'Cancelar', clase: 'btn-secondary', valor: false }, { texto: 'Confirmar', clase: 'btn-danger', valor: true }] });
         }
 
-        // ─── Gestión de pestañas ─────────────
+        // ── Tabs ─────────────────────────────────
         function inicializarTabs(containerId) {
             const tabButtons = document.querySelectorAll(`#${containerId} .tab-btn`);
-            const tabPanels = document.querySelectorAll(`#${containerId} ~ .tab-panel, #vistaFinanzas .tab-panel`);
-
             tabButtons.forEach(btn => {
                 btn.addEventListener('click', () => {
                     const target = btn.getAttribute('data-tab');
                     const parentContainer = btn.closest('.tabs-container').parentElement;
-
-                    // Actualizar botones
                     btn.parentElement.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
                     btn.classList.add('active');
-
-                    // Mostrar panel correspondiente
                     parentContainer.querySelectorAll('.tab-panel').forEach(panel => {
                         panel.classList.remove('active');
                         if (panel.id === target) panel.classList.add('active');
                     });
-
-                    // Cargar datos según la pestaña activada
                     if (containerId === 'tabNavigationFinanzas') {
                         if (target === 'tab-alertas') cargarAuditoria();
                         if (target === 'tab-historial') cargarHistorialCompleto();
                         if (target === 'tab-resumen') actualizarEstadisticas();
                     }
-                    if (containerId === 'tabNavigationVentas' && target === 'tab-consola') {
-                        cargarDatosConsolaAdmin();
-                    }
+                    if (containerId === 'tabNavigationVentas' && target === 'tab-consola') cargarDatosConsolaAdmin();
                 });
             });
         }
 
-        // ─── LOGIN ─────────────────────────────
+        // ── LOGIN ────────────────────────────────
         document.getElementById('formLogin').onsubmit = async (e) => {
             e.preventDefault();
             const errorDiv = document.getElementById('statusLogin');
             errorDiv.innerText = "Verificando credenciales...";
-
             try {
                 const res = await fetch(`${API_URL}/usuarios/login`, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                        username: document.getElementById('loginUser').value,
-                        password: document.getElementById('loginPass').value
-                    })
+                    method: "POST", headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ username: document.getElementById('loginUser').value, password: document.getElementById('loginPass').value })
                 });
-
                 if (res.ok) {
                     usuarioActual = await res.json();
                     localStorage.setItem("usuarioSesion", JSON.stringify(usuarioActual));
@@ -750,26 +884,23 @@
                     mostrarVistaCorrespondiente();
                 } else {
                     const data = await res.json();
-                    const mensajeError = data.detail || "Credenciales inválidas. Verifique sus datos.";
-                    errorDiv.innerText = mensajeError;
-                    await mostrarAlerta(mensajeError, 'danger', 'Error de Autenticación');
+                    const msg = data.detail || "Credenciales inválidas. Verifique sus datos.";
+                    errorDiv.innerText = msg;
+                    await mostrarAlerta(msg, 'danger', 'Error de Autenticación');
                 }
             } catch (err) {
-                const mensajeError = "Error de conexión. Verifique su red e intente nuevamente.";
-                errorDiv.innerText = mensajeError;
-                await mostrarAlerta(mensajeError, 'danger', 'Error de Red');
+                const msg = "Error de conexión. Verifique su red e intente nuevamente.";
+                errorDiv.innerText = msg;
+                await mostrarAlerta(msg, 'danger', 'Error de Red');
             }
         };
 
         function mostrarVistaCorrespondiente() {
             document.getElementById('vistaLogin').classList.add('hidden');
-
             if (usuarioActual.role === "Ventas") {
                 document.getElementById('nombreVendedor').innerText = usuarioActual.username;
                 const avatar = document.getElementById('avatarVendedor');
-                if (avatar && usuarioActual.username) {
-                    avatar.innerText = usuarioActual.username.charAt(0).toUpperCase();
-                }
+                if (avatar && usuarioActual.username) avatar.innerText = usuarioActual.username.charAt(0).toUpperCase();
                 document.getElementById('vistaVentas').classList.remove('hidden');
                 document.getElementById('vistaFinanzas').classList.add('hidden');
                 inicializarTabs('tabNavigationVentas');
@@ -777,9 +908,7 @@
             } else if (usuarioActual.role === "Finanzas") {
                 document.getElementById('nombreAuditor').innerText = usuarioActual.username;
                 const avatar = document.getElementById('avatarAuditor');
-                if (avatar && usuarioActual.username) {
-                    avatar.innerText = usuarioActual.username.charAt(0).toUpperCase();
-                }
+                if (avatar && usuarioActual.username) avatar.innerText = usuarioActual.username.charAt(0).toUpperCase();
                 document.getElementById('vistaFinanzas').classList.remove('hidden');
                 document.getElementById('vistaVentas').classList.add('hidden');
                 inicializarTabs('tabNavigationFinanzas');
@@ -800,18 +929,15 @@
             document.getElementById('statusLogin').innerText = "";
         }
 
-        // ─── LÓGICA DE VENTAS ──────────────────
+        // ── VENTAS: Registrar usuario ────────────
         document.getElementById('formUsuario').onsubmit = async (e) => {
             e.preventDefault();
             const submitBtn = document.querySelector('#formUsuario .btn-primary');
             const originalText = submitBtn.innerText;
-            submitBtn.innerText = "Procesando...";
-            submitBtn.disabled = true;
-
+            submitBtn.innerText = "Procesando..."; submitBtn.disabled = true;
             try {
                 const res = await fetch(`${API_URL}/usuarios/registrar`, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
+                    method: "POST", headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({
                         username: document.getElementById('userUsername').value,
                         password: document.getElementById('userPassword').value,
@@ -819,306 +945,231 @@
                     })
                 });
                 const data = await res.json();
-
                 if (res.ok) {
-                    await mostrarAlerta(data.mensaje || "Cliente registrado correctamente.", 'success', 'Cliente Creado');
+                    await mostrarAlerta(data.mensaje || "Usuario registrado correctamente.", 'success', 'Usuario Creado');
                     document.getElementById('formUsuario').reset();
                     document.getElementById('userPassword').value = '123';
                     cargarClientesParaBuscador();
                 } else {
-                    await mostrarAlerta(data.detail || "No se pudo registrar al cliente.", 'danger', 'Error de Registro');
+                    await mostrarAlerta(data.detail || "No se pudo registrar al usuario.", 'danger', 'Error de Registro');
                 }
-            } catch (err) {
-                await mostrarAlerta("Error de red al conectar con el servidor de registro.", 'danger', 'Error de Conexión');
-            } finally {
-                submitBtn.innerText = originalText;
-                submitBtn.disabled = false;
-            }
+            } catch (err) { await mostrarAlerta("Error de red al conectar con el servidor.", 'danger', 'Error de Conexión'); }
+            finally { submitBtn.innerText = originalText; submitBtn.disabled = false; }
         };
 
+        // ── VENTAS: Directorio CRUD ──────────────
+        async function cargarDirectorioUsuarios() {
+            const tbody = document.querySelector('#tablaUsuarios tbody');
+            tbody.innerHTML = "<tr><td colspan='4' class='text-center text-muted' style='padding:20px;'>Cargando usuarios...</td></tr>";
+            try {
+                const res = await fetch(`${API_URL}/admin/tablas_resumen`);
+                const json = await res.json();
+                // We get clients from the summary; for a full user list we'd need a dedicated endpoint.
+                // For now, show clients + use the admin data.
+                tbody.innerHTML = "";
+                if (json.clientes && json.clientes.length > 0) {
+                    json.clientes.forEach(c => {
+                        const nombre = (c.nombreempresa || c.NombreEmpresa || "—").replace(/^empresa de\s+/i, "");
+                        const idC = c.idcliente || c.idCliente;
+                        const tieneKey = c.llave_publica ? '<span class="badge badge-success">Con llave</span>' : '<span class="badge badge-neutral">Sin llave</span>';
+                        tbody.innerHTML += `
+                        <tr>
+                            <td><strong>#${idC}</strong></td>
+                            <td>${nombre}</td>
+                            <td><span class="badge badge-teal">Cliente</span> ${tieneKey}</td>
+                            <td style="text-align:center;">
+                                <button onclick="eliminarUsuarioCliente(${idC}, '${nombre.replace(/'/g, "\\'")}')" class="btn-xs btn-outline-danger">Eliminar</button>
+                            </td>
+                        </tr>`;
+                    });
+                } else {
+                    tbody.innerHTML = "<tr><td colspan='4' class='text-center text-muted' style='padding:20px;'>No hay usuarios registrados.</td></tr>";
+                }
+            } catch (err) {
+                tbody.innerHTML = "<tr><td colspan='4' class='text-center' style='padding:20px; color:var(--danger);'>Error al cargar el directorio.</td></tr>";
+            }
+        }
+
+        async function eliminarUsuarioCliente(idCliente, nombre) {
+            const confirmado = await mostrarConfirmacion(`¿Desea eliminar permanentemente al cliente "${nombre}" (ID: ${idCliente})? Se borrarán sus cotizaciones asociadas.`, 'Eliminar Cliente');
+            if (!confirmado) return;
+            // NOTE: This requires a DELETE endpoint for clients in the backend. For now, show a placeholder.
+            await mostrarAlerta("La eliminación de usuarios requiere un endpoint dedicado en el backend (/api/v1/admin/usuarios/{id}). Contacte al administrador del sistema.", 'warning', 'Funcionalidad Pendiente');
+        }
+
+        // ── VENTAS: Cotización con tarjetas ──────
         document.getElementById('formCotizacion').onsubmit = async (e) => {
             e.preventDefault();
             if (!document.getElementById('cotIdCliente').value) {
-                await mostrarAlerta("Por favor, busque y seleccione un cliente válido de la lista desplegable.", 'warning', 'Cliente Inválido');
+                await mostrarAlerta("Busque y seleccione un cliente válido de la lista.", 'warning', 'Cliente Requerido');
                 return;
             }
-            const submitBtn = document.querySelector('#formCotizacion .btn-primary');
-            const originalText = submitBtn.innerText;
-            submitBtn.innerText = "Generando...";
-            submitBtn.disabled = true;
+            if (viajeSeleccionadoIdx === null) {
+                await mostrarAlerta("Seleccione un viaje de las tarjetas disponibles.", 'warning', 'Viaje Requerido');
+                return;
+            }
 
+            let monto, detalles;
+            if (viajeSeleccionadoIdx === 5) {
+                // Personalizado
+                monto = parseFloat(document.getElementById('customMonto').value);
+                detalles = document.getElementById('customDetalles').value.trim();
+                if (!monto || !detalles) {
+                    await mostrarAlerta("Complete el monto y la descripción del viaje personalizado.", 'warning', 'Datos Incompletos');
+                    return;
+                }
+            } else {
+                monto = parseFloat(document.getElementById('cotMonto').value);
+                detalles = document.getElementById('cotDetalles').value;
+            }
+
+            const submitBtn = document.querySelector('#formCotizacion .btn-teal');
+            const originalText = submitBtn.innerText;
+            submitBtn.innerText = "Generando..."; submitBtn.disabled = true;
             try {
                 const res = await fetch(`${API_URL}/cotizaciones/crear`, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
+                    method: "POST", headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({
                         id_cliente: parseInt(document.getElementById('cotIdCliente').value),
                         id_vendedor: usuarioActual.id_user,
-                        monto: parseFloat(document.getElementById('cotMonto').value),
-                        detalles: document.getElementById('cotDetalles').value
+                        monto: monto,
+                        detalles: detalles
                     })
                 });
                 const data = await res.json();
-
                 if (res.ok) {
                     await mostrarAlerta(`Cotización #${data.id_cotizacion} creada exitosamente. Esperando firma del cliente.`, 'success', 'Cotización Emitida');
-                    document.getElementById('formCotizacion').reset();
+                    // Reset
+                    document.getElementById('cotBuscadorCliente').value = '';
+                    document.getElementById('cotIdCliente').value = '';
+                    document.querySelectorAll('.trip-card').forEach(c => c.classList.remove('selected'));
+                    document.getElementById('camposPersonalizados').classList.add('hidden');
+                    viajeSeleccionadoIdx = null;
                 } else {
                     await mostrarAlerta(data.detail || "No se pudo crear la cotización.", 'danger', 'Error de Cotización');
                 }
-            } catch (err) {
-                await mostrarAlerta("Error de red al enviar la cotización.", 'danger', 'Error de Conexión');
-            } finally {
-                submitBtn.innerText = originalText;
-                submitBtn.disabled = false;
-            }
+            } catch (err) { await mostrarAlerta("Error de red al enviar la cotización.", 'danger', 'Error de Conexión'); }
+            finally { submitBtn.innerText = originalText; submitBtn.disabled = false; }
         };
 
-        // ─── LÓGICA DE FINANZAS ────────────────
+        // ── FINANZAS ─────────────────────────────
         async function actualizarEstadisticas() {
             try {
                 const res = await fetch(`${API_URL}/auditoria`);
                 const json = await res.json();
-
-                if (json.data) {
-                    const totalAlertas = json.data.length;
-                    const alteraciones = json.data.filter(r => r.accion === 'ALTERACION').length;
-                    const fraudes = json.data.filter(r => r.accion === 'FRAUDE' || r.accion === 'MODIFICACION').length;
-
-                    document.getElementById('totalAlertas').innerText = totalAlertas;
-                    document.getElementById('totalAlteraciones').innerText = alteraciones;
-                    document.getElementById('totalFraudes').innerText = fraudes;
-                }
-            } catch (err) {
-                console.log("Error al cargar estadísticas:", err);
-            }
+                if (json.data) document.getElementById('totalAlertas').innerText = json.data.length;
+            } catch (err) { console.log("Error al cargar estadísticas:", err); }
         }
-        // ─── NUEVO: LOGICA DE INSPECCIÓN CRIPTOGRÁFICA POST-FIRMA ───
+
         async function ejecutarAuditoriaProfunda() {
             const btnAuditoria = document.getElementById('btnAuditoriaProfunda');
             const originalText = btnAuditoria.innerText;
-            
-            // Bloqueo defensivo del botón para evitar concurrencia en el cálculo matemático
-            btnAuditoria.innerText = "⚡ Validando Curvas Elípticas...";
-            btnAuditoria.disabled = true;
-            btnAuditoria.style.opacity = "0.7";
-
+            btnAuditoria.innerText = "⚡ Validando Curvas Elípticas..."; btnAuditoria.disabled = true; btnAuditoria.style.opacity = "0.7";
             try {
-                // Petición al endpoint de auditoría asíncrona continua
-                const res = await fetch(`${API_URL}/auditoria/verificar_firmadas`, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" }
-                });
-                
+                const res = await fetch(`${API_URL}/auditoria/verificar_firmadas`, { method: "POST", headers: { "Content-Type": "application/json" } });
                 const data = await res.json();
-
                 if (res.ok) {
-                    // Recargamos los paneles visuales para reflejar los cambios de estado instantáneamente
                     await cargarAuditoria();
                     await actualizarEstadisticas();
-
-                    // Si el backend descubrió alteraciones post-firma, lanzamos un modal de peligro directo
                     if (data.mensaje.includes("Alertas post-firma encontradas: 0")) {
-                        await mostrarAlerta(
-                            `${data.mensaje}\n\nTodos los sellos criptográficos vigentes coinciden perfectamente con el hardware local del cliente.`, 
-                            'success', 
-                            'Sistema Íntegro'
-                        );
+                        await mostrarAlerta(`${data.mensaje}\n\nTodos los sellos criptográficos vigentes coinciden perfectamente con el hardware local del cliente.`, 'success', 'Sistema Íntegro');
                     } else {
-                        await mostrarAlerta(
-                            `¡ALERTA DE SEGURIDAD DISPARADA!\n\n${data.mensaje}\n\nSe han detectado alteraciones arbitrarias en las filas de la base de datos de producción. Las firmas se han roto y los contratos fueron aislados bajo estado 'Alterada'.`, 
-                            'danger', 
-                            'Fraude Interno Detectado'
-                        );
+                        await mostrarAlerta(`¡ALERTA DE SEGURIDAD DISPARADA!\n\n${data.mensaje}\n\nSe han detectado alteraciones arbitrarias en las filas de la base de datos de producción.`, 'danger', 'Fraude Interno Detectado');
                     }
-                } else {
-                    await mostrarAlerta(data.detail || "Fallo inesperado al ejecutar el motor criptográfico.", 'danger', 'Error de Auditoría');
-                }
-            } catch (err) {
-                console.error("Fallo de red en módulo forense:", err);
-                await mostrarAlerta("No se pudo establecer comunicación con el Monolito de seguridad en Render.", 'danger', 'Error de Red');
-            } finally {
-                // Restauración del estado del botón
-                btnAuditoria.innerText = originalText;
-                btnAuditoria.disabled = false;
-                btnAuditoria.style.opacity = "1";
-            }
+                } else { await mostrarAlerta(data.detail || "Fallo inesperado al ejecutar el motor criptográfico.", 'danger', 'Error de Auditoría'); }
+            } catch (err) { await mostrarAlerta("No se pudo establecer comunicación con el Monolito de seguridad en Render.", 'danger', 'Error de Red'); }
+            finally { btnAuditoria.innerText = originalText; btnAuditoria.disabled = false; btnAuditoria.style.opacity = "1"; }
         }
 
         async function cargarAuditoria() {
             const tbody = document.querySelector('#tablaAlertas tbody');
-            // CORRECCIÓN: Ajustado a colspan='5' para cubrir todo el grid forense
             tbody.innerHTML = "<tr><td colspan='5' style='text-align:center; color:#64748b; padding:20px;'>Cargando alertas criptográficas...</td></tr>";
-
             try {
                 const res = await fetch(`${API_URL}/auditoria`);
                 const json = await res.json();
-
-                if (json.data.length === 0) {
-                    // CORRECCIÓN: Ajustado a colspan='5'
-                    tbody.innerHTML = "<tr><td colspan='5' style='text-align:center; color:#64748b; padding:20px;'>No se han detectado alteraciones o fraudes en el sistema.</td></tr>";
-                    return;
-                }
-
+                if (json.data.length === 0) { tbody.innerHTML = "<tr><td colspan='5' style='text-align:center; color:#64748b; padding:20px;'>No se han detectado alteraciones o fraudes en el sistema.</td></tr>"; return; }
                 tbody.innerHTML = "";
                 json.data.forEach(reg => {
                     const fecha = new Date(reg.fecha_evento).toLocaleString('es-MX');
-                    
-                    // Renderizado dinámico de la fila de auditoría
-                    tbody.innerHTML += `
-                        <tr>
-                            <td>${fecha}</td>
-                            <td><strong>#${reg.idcotizacion}</strong></td>
-                            <td>
-                                <span class="badge badge-neutral">
-                                    👤 ${reg.nombre_vendedor}
-                                </span>
-                            </td>
-                            <td><span class="badge badge-danger">${reg.accion}</span></td>
-                            <td class="mono-text" style="max-width: 300px; font-size: 0.75rem;">${reg.datos_anteriores}</td>
-                        </tr>`;
-                    });
+                    tbody.innerHTML += `<tr><td>${fecha}</td><td><strong>#${reg.idcotizacion}</strong></td><td><span class="badge badge-neutral">👤 ${reg.nombre_vendedor}</span></td><td><span class="badge badge-danger">${reg.accion}</span></td><td class="mono-text" style="max-width:300px; font-size:0.75rem;">${reg.datos_anteriores}</td></tr>`;
+                });
                 actualizarEstadisticas();
             } catch (err) {
-                // CORRECCIÓN: Ajustado a colspan='5'
                 tbody.innerHTML = "<tr><td colspan='5' style='text-align:center; color:#dc2626; padding:20px;'>Error al conectar con el servicio de auditoría.</td></tr>";
-                await mostrarAlerta("No se pudo recuperar el registro de alertas. Verifique la conexión con Render.", 'danger', 'Error de Sincronización');
+                await mostrarAlerta("No se pudo recuperar el registro de alertas.", 'danger', 'Error de Sincronización');
             }
         }
+
         async function cargarHistorialCompleto() {
             const tbody = document.querySelector('#tablaHistorial tbody');
-            tbody.innerHTML = "<tr><td colspan='4' style='text-align:center; color:#64748b; padding:20px;'>Cargando historial completo de transacciones...</td></tr>";
-
+            tbody.innerHTML = "<tr><td colspan='5' style='text-align:center; color:#64748b; padding:20px;'>Cargando historial...</td></tr>";
             try {
                 const res = await fetch(`${API_URL}/auditoria`);
                 const json = await res.json();
-
-                if (json.data.length === 0) {
-                    tbody.innerHTML = "<tr><td colspan='4' style='text-align:center; color:#64748b; padding:20px;'>El historial de integridad está limpio. No se han registrado eventos.</td></tr>";
-                    return;
-                }
-
+                if (json.data.length === 0) { tbody.innerHTML = "<tr><td colspan='5' style='text-align:center; color:#64748b; padding:20px;'>El historial está limpio.</td></tr>"; return; }
                 tbody.innerHTML = "";
                 json.data.forEach(reg => {
                     const fecha = new Date(reg.fecha_evento).toLocaleString('es-MX');
                     let badgeClass = 'badge-neutral';
                     if (reg.accion === 'ALTERACION') badgeClass = 'badge-warning';
                     if (reg.accion === 'FRAUDE') badgeClass = 'badge-danger';
-
-                    // Dentro de la función cargarHistorialCompleto():
-                    tbody.innerHTML += `
-                    <tr>
-                        <td>${fecha}</td>
-                        <td><strong>#${reg.idcotizacion}</strong></td>
-                        <td>
-                            <span class="badge badge-neutral">
-                                👤 ${reg.nombre_vendedor}
-                            </span>
-                        </td>
-                        <td>${reg.accion}</td>
-                        <td><span class="badge ${badgeClass}">${reg.accion === 'ALTERACION' ? 'Revisado' : 'Crítico'}</span></td>
-                    </tr>`;
+                    tbody.innerHTML += `<tr><td>${fecha}</td><td><strong>#${reg.idcotizacion}</strong></td><td><span class="badge badge-neutral">👤 ${reg.nombre_vendedor}</span></td><td>${reg.accion}</td><td><span class="badge ${badgeClass}">${reg.accion === 'ALTERACION' ? 'Revisado' : 'Crítico'}</span></td></tr>`;
                 });
-            } catch (err) {
-                tbody.innerHTML = "<tr><td colspan='4' style='text-align:center; color:#dc2626; padding:20px;'>Error al cargar el historial de integridad.</td></tr>";
-            }
+            } catch (err) { tbody.innerHTML = "<tr><td colspan='5' style='text-align:center; color:#dc2626; padding:20px;'>Error al cargar el historial.</td></tr>"; }
         }
 
         async function exportarHistorial() {
             await mostrarAlerta("La funcionalidad de exportación estará disponible en la próxima actualización del sistema.", 'info', 'Funcionalidad en Desarrollo');
         }
 
+        // ── CONSOLA ADMIN ────────────────────────
         async function cargarDatosConsolaAdmin() {
             const tbody = document.querySelector('#tablaAdminCotizaciones tbody');
-            tbody.innerHTML = "<tr><td colspan='5' style='text-align:center; color:#64748b; padding:20px;'>Consultando registros contables...</td></tr>";
-
+            tbody.innerHTML = "<tr><td colspan='5' style='text-align:center; color:#64748b; padding:20px;'>Consultando registros...</td></tr>";
             try {
                 const res = await fetch(`${API_URL}/admin/tablas_resumen`);
                 const json = await res.json();
-
-                if (!json.cotizaciones || json.cotizaciones.length === 0) {
-                    tbody.innerHTML = "<tr><td colspan='5' style='text-align:center; color:#64748b; padding:20px;'>No hay cotizaciones activas en la base de datos.</td></tr>";
-                    return;
-                }
-
+                if (!json.cotizaciones || json.cotizaciones.length === 0) { tbody.innerHTML = "<tr><td colspan='5' style='text-align:center; color:#64748b; padding:20px;'>No hay cotizaciones activas.</td></tr>"; return; }
                 tbody.innerHTML = "";
                 json.cotizaciones.forEach(cot => {
                     let badgeClass = 'badge-neutral';
                     if (cot.estado === "Firmada") badgeClass = 'badge-success';
                     if (cot.estado === "Alterada") badgeClass = 'badge-danger';
                     if (cot.estado === "Pendiente") badgeClass = 'badge-warning';
-
-                    // CORRECCIÓN: Se eliminó la variable inexistente "reg" y se ajustaron las 5 columnas exactas
-                    tbody.innerHTML += `
-                    <tr>
-                        <td><strong>#${cot.idcotizacion}</strong></td>
-                        <td>ID Client: ${cot.idcliente}</td>
-                        <td><strong>$${cot.monto}</strong></td>
-                        <td><span class="badge ${badgeClass}">${cot.estado}</span></td>
-                        <td style="text-align:center;">
-                            <button onclick="eliminarCotizacionIndividual(${cot.idcotizacion})" class="btn-xs btn-danger">Eliminar</button>
-                        </td>
-                    </tr>`;
+                    tbody.innerHTML += `<tr><td><strong>#${cot.idcotizacion}</strong></td><td>ID Client: ${cot.idcliente}</td><td><strong>$${cot.monto}</strong></td><td><span class="badge ${badgeClass}">${cot.estado}</span></td><td style="text-align:center;"><button onclick="eliminarCotizacionIndividual(${cot.idcotizacion})" class="btn-xs btn-danger">Eliminar</button></td></tr>`;
                 });
             } catch (err) {
-                console.error("Fallo renderizando consola:", err);
-                tbody.innerHTML = "<tr><td colspan='5' style='text-align:center; color:#dc2626; padding:20px;'>Error al mapear la consola de mantenimiento.</td></tr>";
-                await mostrarAlerta("No se pudo cargar la consola de administración. Intente nuevamente.", 'danger', 'Error de Carga');
+                tbody.innerHTML = "<tr><td colspan='5' style='text-align:center; color:#dc2626; padding:20px;'>Error al cargar la consola.</td></tr>";
+                await mostrarAlerta("No se pudo cargar la consola de administración.", 'danger', 'Error de Carga');
             }
         }
 
         async function eliminarCotizacionIndividual(id) {
-            const confirmado = await mostrarConfirmacion(
-                `¿Confirma que desea borrar permanentemente la Cotización #${id}? Esta acción eliminará el historial asociado y no se puede deshacer.`,
-                'Eliminar Cotización'
-            );
+            const confirmado = await mostrarConfirmacion(`¿Confirma que desea borrar permanentemente la Cotización #${id}?`, 'Eliminar Cotización');
             if (!confirmado) return;
-
             try {
                 const res = await fetch(`${API_URL}/admin/cotizaciones/${id}`, { method: "DELETE" });
                 const data = await res.json();
-
-                if (res.ok) {
-                    await mostrarAlerta(data.mensaje || `Cotización #${id} eliminada correctamente.`, 'success', 'Eliminación Exitosa');
-                    cargarDatosConsolaAdmin();
-                } else {
-                    await mostrarAlerta("No se pudo eliminar la cotización: " + (data.detail || "Error desconocido."), 'danger', 'Error de Eliminación');
-                }
-            } catch (err) {
-                await mostrarAlerta("Fallo de red al intentar eliminar la cotización. Verifique su conexión.", 'danger', 'Error de Conexión');
-            }
+                if (res.ok) { await mostrarAlerta(data.mensaje || `Cotización #${id} eliminada.`, 'success', 'Eliminación Exitosa'); cargarDatosConsolaAdmin(); }
+                else { await mostrarAlerta("No se pudo eliminar: " + (data.detail || "Error desconocido."), 'danger', 'Error'); }
+            } catch (err) { await mostrarAlerta("Fallo de red al eliminar.", 'danger', 'Error de Conexión'); }
         }
 
         async function vaciarSandboxCompleto() {
-            const confirmado = await mostrarConfirmacion(
-                "Está a punto de vaciar por completo las tablas 'Cotizacion' y 'Registro_Auditoria'. Esta acción reiniciará el contador de IDs a 1 y eliminará todos los registros. ¿Desea continuar?",
-                'Vaciar Base de Datos Sandbox'
-            );
+            const confirmado = await mostrarConfirmacion("Está a punto de vaciar por completo las tablas 'Cotizacion' y 'Registro_Auditoria'. ¿Desea continuar?", 'Vaciar Sandbox');
             if (!confirmado) return;
-
             try {
                 const res = await fetch(`${API_URL}/admin/vaciar_registros_sandbox`, { method: "POST" });
                 const data = await res.json();
-
-                if (res.ok) {
-                    await mostrarAlerta(data.mensaje || "Todos los registros han sido eliminados correctamente.", 'success', 'Sandbox Reiniciado');
-                    cargarDatosConsolaAdmin();
-                } else {
-                    await mostrarAlerta("Error al vaciar el sandbox: " + (data.detail || "Error desconocido."), 'danger', 'Error de Sistema');
-                }
-            } catch (err) {
-                await mostrarAlerta("Error crítico al ejecutar el comando en Render. Verifique la conexión con el servidor.", 'danger', 'Error Crítico');
-            }
+                if (res.ok) { await mostrarAlerta(data.mensaje || "Registros eliminados.", 'success', 'Sandbox Reiniciado'); cargarDatosConsolaAdmin(); }
+                else { await mostrarAlerta("Error: " + (data.detail || "Error desconocido."), 'danger', 'Error'); }
+            } catch (err) { await mostrarAlerta("Error crítico al ejecutar el comando.", 'danger', 'Error Crítico'); }
         }
 
         window.onload = () => {
             const sesionGuardada = localStorage.getItem("usuarioSesion");
-            if (sesionGuardada) {
-                usuarioActual = JSON.parse(sesionGuardada);
-                mostrarVistaCorrespondiente();
-            }
+            if (sesionGuardada) { usuarioActual = JSON.parse(sesionGuardada); mostrarVistaCorrespondiente(); }
         };
-        
     </script>
 </body>
 </html>
